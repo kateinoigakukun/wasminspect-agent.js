@@ -1,3 +1,3 @@
 export default {
-    "WebSocket": window.WebSocket,
+    "WebSocket": self.WebSocket,
 };
