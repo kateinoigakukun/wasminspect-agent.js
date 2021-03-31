@@ -1,3 +1,4 @@
-import SocketWorker from "worker-loader?inline=fallback!./socket.worker"
+// @ts-nocheck
+import SocketWorker from "./socket.worker"
 
 export default function () { return new SocketWorker() };
