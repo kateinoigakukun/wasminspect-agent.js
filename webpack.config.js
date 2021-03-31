@@ -1,5 +1,5 @@
 const webpack = require("webpack")
-const path = require('path');
+const path = require("path");
 
 module.exports = {
     entry: "./src/index.ts",
@@ -7,25 +7,32 @@ module.exports = {
     node: false,
     output: {
         path: path.resolve(__dirname, "web-dist"),
+        library: "eio",
+        libraryTarget: "umd",
         filename: "web.js",
     },
     module: {
         rules: [
             {
-                test: /\.worker\.ts$/,
-                loader: "worker-loader",
-                options: {
-                    inline: "fallback",
-                },
+                test: /\.ts$/,
+                loader: "ts-loader"
             },
             {
-                test: /\.ts$/,
-                loader: 'ts-loader'
+                test: /\.worker.ts$/,
+                use: [
+                    {
+                        loader: "worker-loader",
+                        options: {
+                            inline: "fallback",
+                        },
+                    },
+                    "ts-loader"
+                ],
             },
         ]
     },
     resolve: {
-        extensions: ['.ts', '.js']
+        extensions: [".ts", ".js"]
     },
     plugins: [
         new webpack.NormalModuleReplacementPlugin(
