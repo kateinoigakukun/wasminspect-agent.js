@@ -8,7 +8,7 @@
     "build:web": "webpack"
   },
   "module": "dist/index.js",
-  "browser": "./web-dist/web.js",
+  "browser": "web-dist/web.js",
   "dependencies": {
     "ws": "^7.4.4"
   },

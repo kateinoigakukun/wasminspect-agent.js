@@ -16,7 +16,7 @@ export type TextRequest = {
     values: number[],
 }
 
-export type Request = {
+export type SocketRequest = {
     type: "TextRequest",
     body: TextRequest
 } | {
@@ -34,7 +34,7 @@ export type TextResponse = {
     values: WasmValue[]
 }
 
-export type Response = {
+export type SocketResponse = {
     type: "TextResponse",
     body: TextResponse
 }

@@ -3,7 +3,7 @@ const path = require("path");
 
 module.exports = {
     entry: "./src/index.ts",
-    mode: "production",
+    mode: "development",
     node: false,
     output: {
         path: path.resolve(__dirname, "web-dist"),
