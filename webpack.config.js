@@ -36,5 +36,9 @@ module.exports = {
             /\.\/worker-constructor/,
             "./worker-constructor.browser"
         ),
+        new webpack.NormalModuleReplacementPlugin(
+            /\.\/worker-context-constructor/,
+            "./worker-context-constructor.browser"
+        ),
     ],
 };
