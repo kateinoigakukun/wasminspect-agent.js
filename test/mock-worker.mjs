@@ -11,15 +11,14 @@ const state = {
 
 class EchoSocket {
     constructor() {
-        this.onmessage = () => {};
-        this.onopen = () => {};
+        this.onmessage = () => { };
+        this.onopen = () => { };
         queueMicrotask(() => {
             this.onopen({})
         })
     }
     send(data) {
-        console.log("send: ", data)
-        this.onmessage(data)
+        this.onmessage({ data })
     }
 }
 

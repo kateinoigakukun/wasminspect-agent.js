@@ -91,6 +91,7 @@ export const acceptWorkerRequest = (
                 acceptSocketEvent(event.data, state, ctx)
             }
             state.debugEnabled = workerRequest.inner.debugEnabled;
+            ctx.postMessage({ type: "SetConfiguration" } as WorkerResponse)
             break;
         }
         case "BlockingPrologue": {
@@ -127,11 +128,9 @@ export const acceptWorkerRequest = (
                 return;
             }
             const request: SocketRequest = workerRequest.inner;
-            console.log(request)
             switch (request.type) {
                 case "TextRequest": {
-                    const json = JSON.stringify(request.body);
-                    state.socket.send(json);
+                    state.socket.send(request.body);
                     break;
                 }
                 case "BinaryRequest": {

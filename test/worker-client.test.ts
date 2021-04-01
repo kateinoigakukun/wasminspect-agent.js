@@ -18,17 +18,20 @@ describe("blockingReceive", () => {
         _client = new WorkerClient(config, createSocketWorker);
         _client.postRequest({ type: "Configure", inner: config })
         await _client.receive("SetConfiguration");
+        await _client.receive("OnSocketOpen");
     })
     afterEach(async () => {
         await _client!.terminate();
     })
     it("event happen before receive", async () => {
         const client = _client!;
-        client.postRequest({ type: "SocketRequest", inner: {
-            type: "TextRequest",
-            body: "Hello"
-        } });
-        const response = await client.receive("SocketResponse");
+        client.postRequest({
+            type: "SocketRequest", inner: {
+                type: "TextRequest",
+                body: "Hello"
+            }
+        }, true);
+        const response = client.blockingReceive("SocketResponse");
         expect(response.inner.body).toBe("Hello")
     })
 })

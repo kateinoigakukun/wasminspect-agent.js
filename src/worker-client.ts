@@ -42,7 +42,7 @@ export class WorkerClient {
         if (response.type == type) {
             return Promise.resolve(response as any);
         } else {
-            return Promise.reject(new Error(`[wasminspect-web] Unexpected response: ${response}, expected: ${type}`));
+            return Promise.reject(new Error(`[wasminspect-web] Unexpected response: ${JSON.stringify(response)}, expected: ${type}`));
         }
     }
     blockingReceive<T extends _ResponseKind>(type: T): _SelectResponse<T> {
