@@ -24,14 +24,6 @@ export type TextRequest = {
     values: number[],
 }
 
-export type SocketRequest = {
-    type: "TextRequest",
-    body: TextRequest
-} | {
-    type: "BinaryRequest",
-    body: Uint8Array,
-}
-
 export type InitResponse = {
     type: "Init",
     exports: WasmExport[],
@@ -44,8 +36,3 @@ export type TextResponse = {
     type: "CallResult",
     values: WasmValue[]
 } | InitResponse;
-
-export type SocketResponse = {
-    type: "TextResponse",
-    body: TextResponse
-}

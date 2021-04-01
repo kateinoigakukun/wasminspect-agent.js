@@ -10,9 +10,22 @@ function createSocketWorker(): WorkerHandle {
 }
 
 describe("blockingReceive", () => {
-    it("", async () => {
+    let _client: WorkerClient | undefined;
+    beforeEach(async () => {
         const config: Config = defaultConfig();
-        const client = new WorkerClient(config, createSocketWorker);
-        await client.terminate()
+        config.blockingTimeout = 3000;
+        config.debugEnabled = true;
+        _client = new WorkerClient(config, createSocketWorker);
+        _client.postRequest({ type: "Configure", inner: config })
+        await _client.receive();
+    })
+    afterEach(async () => {
+        await _client!.terminate();
+    })
+    it("event happen before receive", async () => {
+        const client = _client!;
+        client.postRequest({ type: "SocketRequest", inner: "Hello" });
+        const response = await client.receive() as string;
+        expect(response).toBe("Hello")
     })
 })

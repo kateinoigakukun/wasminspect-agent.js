@@ -1,6 +1,6 @@
-import { TextRequest, SocketResponse, TextResponse, InitResponse, WasmExport } from "./socket-rpc"
-import { WorkerRequest } from "./worker-rpc";
-import { WorkerClient } from "./worker-client";
+import { TextRequest, TextResponse, InitResponse, WasmExport } from "./socket-rpc"
+import { WorkerRequest, SocketResponse } from "./worker-rpc";
+import { RpcClient, WorkerClient } from "./worker-client";
 import { Config, defaultConfig } from "./config";
 import { RemoteMemoryBuffer } from "./remote-memory";
 import createSocketWorker from "./worker-constructor"
@@ -22,13 +22,13 @@ export namespace WasmInspect {
     function _createExportObject(e: WasmExport, module: Module): WebAssembly.ExportValue | undefined {
         switch (e.type) {
             case "Memory": {
-                const buffer = new RemoteMemoryBuffer(e.name, 0, e.memorySize, module.worker);
+                const buffer = new RemoteMemoryBuffer(e.name, 0, e.memorySize, module.rpc);
                 return new Memory(buffer);
             }
             case "Function": {
                 return (...args: any[]) => {
-                    module.worker.postRequest(_createTextRequest({ type: "CallExported", name: e.name, args: args }), true);
-                    const response = module.worker.blockingReceive("SocketResponse");
+                    module.rpc.postRequest(_createTextRequest({ type: "CallExported", name: e.name, args: args }), true);
+                    const response = module.rpc.blockingReceive("SocketResponse");
                     const result = _castTextResponse(response.inner, "CallResult");
                     return result.values[0];
                 };
@@ -55,11 +55,11 @@ export namespace WasmInspect {
     }
 
     export class Module implements WebAssembly.Module {
-        worker: WorkerClient
+        rpc: RpcClient
         init: InitResponse;
-        constructor(init: InitResponse, worker: WorkerClient) {
+        constructor(init: InitResponse, rpc: RpcClient) {
             this.init = init;
-            this.worker = worker
+            this.rpc = rpc;
         }
     }
 
@@ -67,8 +67,9 @@ export namespace WasmInspect {
     type _SelectTextResponse<T extends _TextResponseKind> = Extract<TextResponse, { type: T }>;
     function _castTextResponse<T extends _TextResponseKind>(response: SocketResponse, type: T): _SelectTextResponse<T> {
         if (response.type == "TextResponse") {
-            if (response.body.type == type) {
-                return response.body as _SelectTextResponse<T>;
+            const body = JSON.parse(response.body) as TextResponse;
+            if (body.type == type) {
+                return body as _SelectTextResponse<T>;
             } else {
                 throw new Error(`[wasminspect-web] Unexpected response: ${response}. expected: ${type}`);
             }
@@ -82,7 +83,7 @@ export namespace WasmInspect {
             type: "SocketRequest",
             inner: {
                 type: "TextRequest",
-                body
+                body: JSON.stringify(body)
             }
         }
     }
@@ -105,15 +106,16 @@ export namespace WasmInspect {
             uint8Buffer = new Uint8Array(bytes.buffer);
         }
         const worker = new WorkerClient(configuration, createSocketWorker);
-        await worker.postRequest({
+        const rpc = new RpcClient(worker);
+        await rpc.postRequest({
             type: "Configure",
             inner: configuration,
         });
-        await worker.receive("OnSocketOpen");
-        worker.postRequest(_createBinaryRequest(uint8Buffer));
-        const response = await worker.receive("SocketResponse");
+        await rpc.receive("OnSocketOpen");
+        rpc.postRequest(_createBinaryRequest(uint8Buffer));
+        const response = await rpc.receive("SocketResponse");
         const init = _castTextResponse(response.inner, "Init");
-        return new Module(init, worker);
+        return new Module(init, rpc);
     }
 
     // export function instantiate(bytes: BufferSource, importObject?: WebAssembly.Imports): Promise<WebAssembly.WebAssemblyInstantiatedSource> {

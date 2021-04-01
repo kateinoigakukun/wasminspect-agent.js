@@ -1,5 +1,4 @@
 import { Config } from "./config";
-import { SocketRequest, SocketResponse } from "./socket-rpc"
 
 export type WorkerRequest = {
     type: "Configure",
@@ -13,6 +12,19 @@ export type WorkerRequest = {
 } | {
     type: "BlockingEpilogue",
     jsonBuffer: SharedArrayBuffer,
+}
+
+export type SocketRequest = {
+    type: "TextRequest",
+    body: string
+} | {
+    type: "BinaryRequest",
+    body: Uint8Array,
+}
+
+export type SocketResponse = {
+    type: "TextResponse",
+    body: string
 }
 
 export type WorkerResponse = {

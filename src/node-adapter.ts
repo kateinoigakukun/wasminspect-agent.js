@@ -22,7 +22,7 @@ export function wrapNodeWorker(nep: NodeWorker): WorkerPort {
     const listeners = new WeakMap();
     return {
         postMessage: nep.postMessage.bind(nep),
-        addEventListener: (_, eh) => {
+        addEventListener: (name, eh) => {
             const l = (data: any) => {
                 if ("handleEvent" in eh) {
                     eh.handleEvent({ data } as MessageEvent);
@@ -30,15 +30,15 @@ export function wrapNodeWorker(nep: NodeWorker): WorkerPort {
                     eh({ data } as MessageEvent);
                 }
             };
-            nep.on("message", l);
+            nep.on(name, l);
             listeners.set(eh, l);
         },
-        removeEventListener: (_, eh) => {
+        removeEventListener: (name, eh) => {
             const l = listeners.get(eh);
             if (!l) {
                 return;
             }
-            nep.off("message", l);
+            nep.off(name, l);
             listeners.delete(eh);
         },
     };

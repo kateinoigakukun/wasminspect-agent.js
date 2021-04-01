@@ -1,6 +1,6 @@
-import { SocketRequest, TextResponse } from "./socket-rpc"
+import { TextResponse } from "./socket-rpc"
 import { WorkerPort } from "./worker";
-import { WorkerRequest, WorkerResponse } from "./worker-rpc";
+import { SocketRequest, SocketResponse, WorkerRequest, WorkerResponse } from "./worker-rpc";
 
 export class BlockingQueue<T> {
     private pendings: T[];
@@ -56,8 +56,7 @@ export const acceptSocketEvent = (eventData: string | ArrayBuffer, state: State,
     }
     let response: WorkerResponse;
     if (typeof eventData === "string") {
-        const body = JSON.parse(eventData) as TextResponse;
-        response = { type: "SocketResponse", inner: { type: "TextResponse", body } } as WorkerResponse;
+        response = { type: "SocketResponse", inner: { type: "TextResponse", body: eventData } } as WorkerResponse;
     } else {
         throw new Error("BinaryResponse is not supported yet");
     }
