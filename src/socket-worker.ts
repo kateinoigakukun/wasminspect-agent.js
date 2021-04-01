@@ -1,9 +1,8 @@
 import { SocketRequest, TextResponse } from "./socket-rpc"
-import WS from "./websocket-constructor"
-import getContext from "./worker-context-constructor"
+import { WorkerPort } from "./worker";
 import { WorkerRequest, WorkerResponse } from "./worker-rpc";
 
-class BlockingQueue<T> {
+export class BlockingQueue<T> {
     private pendings: T[];
     private onpush: ((message: T) => void) | null
 
@@ -37,7 +36,7 @@ class BlockingQueue<T> {
     }
 }
 
-type State = {
+export type State = {
     debugEnabled: boolean,
     isBlocking: boolean,
     socket: Socket | null,
@@ -45,22 +44,13 @@ type State = {
     waitingEpilogue: BlockingQueue<string>,
 }
 
-class Socket {
-    ws: typeof WS.WebSocket["prototype"];
-
-    constructor(addr: string) {
-        const ws = new WS.WebSocket(addr);
-        this.ws = ws;
-        ws.onopen = () => {
-            ctx.postMessage({ type: "OnSocketOpen" } as WorkerResponse)
-        }
-        ws.onmessage = (event: any) => {
-            acceptSocketEvent(event.data, state)
-        }
-    }
+export interface Socket {
+    onopen: (event: any) => void;
+    onmessage: (event: any) => void;
+    send(data: any): void;
 }
 
-const acceptSocketEvent = (eventData: string | ArrayBuffer, state: State) => {
+export const acceptSocketEvent = (eventData: string | ArrayBuffer, state: State, ctx: WorkerPort) => {
     if (state.debugEnabled) {
         console.log("[wasminspect-web] [main thread] <- [worker thread] <- [socket] ", eventData)
     }
@@ -79,7 +69,12 @@ const acceptSocketEvent = (eventData: string | ArrayBuffer, state: State) => {
     }
 };
 
-const acceptWorkerRequest = (workerRequest: WorkerRequest & { isBlocking: boolean }, state: State) => {
+export const acceptWorkerRequest = (
+    workerRequest: WorkerRequest & { isBlocking: boolean },
+    state: State,
+    ctx: WorkerPort,
+    socketFactory: (addr: string) => Socket
+) => {
     if (state.debugEnabled) {
         console.log("[wasminspect-web] [main thread] -> [worker thread] ", JSON.stringify(workerRequest))
     }
@@ -88,7 +83,14 @@ const acceptWorkerRequest = (workerRequest: WorkerRequest & { isBlocking: boolea
 
     switch (workerRequest.type) {
         case "Configure": {
-            state.socket = new Socket(workerRequest.inner.socketAddr);
+            const socket = socketFactory(workerRequest.inner.socketAddr);
+            state.socket = socket;
+            socket.onopen = () => {
+                ctx.postMessage({ type: "OnSocketOpen" } as WorkerResponse)
+            }
+            socket.onmessage = (event: any) => {
+                acceptSocketEvent(event.data, state, ctx)
+            }
             state.debugEnabled = workerRequest.inner.debugEnabled;
             break;
         }
@@ -129,28 +131,14 @@ const acceptWorkerRequest = (workerRequest: WorkerRequest & { isBlocking: boolea
             switch (request.type) {
                 case "TextRequest": {
                     const json = JSON.stringify(request.body);
-                    state.socket.ws.send(json);
+                    state.socket.send(json);
                     break;
                 }
                 case "BinaryRequest": {
-                    state.socket.ws.send(request.body);
+                    state.socket.send(request.body);
                 }
             }
             break;
         }
     }
 };
-
-const ctx = getContext();
-const state: State = {
-    debugEnabled: false,
-    isBlocking: false,
-    socket: null,
-    waitingPrologue: new BlockingQueue<WorkerResponse>(),
-    waitingEpilogue: new BlockingQueue<string>(),
-}
-
-ctx.addEventListener("message", (event: any) => {
-    const workerRequest = event.data as WorkerRequest & { isBlocking: boolean };
-    acceptWorkerRequest(workerRequest, state);
-})

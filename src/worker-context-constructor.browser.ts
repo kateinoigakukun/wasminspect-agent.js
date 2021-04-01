@@ -1,3 +1,5 @@
 import { WorkerPort } from "./worker";
 
-export default function (): WorkerPort { return self };
+export function getContext(): WorkerPort {
+    return self;
+};

@@ -1,6 +1,6 @@
 import { parentPort } from 'worker_threads';
-import wrapNodeWorker from './node-adapter';
+import { wrapNodeWorker } from './node-adapter';
 import { WorkerPort } from './worker';
-export default function(): WorkerPort {
+export function getContext(): WorkerPort {
     return wrapNodeWorker(parentPort!);
 }

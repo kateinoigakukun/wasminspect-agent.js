@@ -13,3 +13,7 @@ export interface WorkerPort {
 
     postMessage(message: any, transfer?: Transferable[]): void;
 }
+
+export interface WorkerHandle extends WorkerPort {
+    terminate(): Promise<void>;
+}

@@ -3,6 +3,7 @@ import { WorkerRequest } from "./worker-rpc";
 import { WorkerClient } from "./worker-client";
 import { Config, defaultConfig } from "./config";
 import { RemoteMemoryBuffer } from "./remote-memory";
+import createSocketWorker from "./worker-constructor"
 
 export namespace WasmInspect {
 
@@ -103,7 +104,7 @@ export namespace WasmInspect {
         } else {
             uint8Buffer = new Uint8Array(bytes.buffer);
         }
-        const worker = new WorkerClient(configuration);
+        const worker = new WorkerClient(configuration, createSocketWorker);
         await worker.postRequest({
             type: "Configure",
             inner: configuration,

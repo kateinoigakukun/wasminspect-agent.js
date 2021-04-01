@@ -1,37 +1,40 @@
 import { SocketRequest, TextRequest, SocketResponse, TextResponse } from "./socket-rpc"
 import { WorkerRequest, WorkerResponse } from "./worker-rpc";
-import { WorkerPort } from "./worker";
-import createSocketWorker from "./worker-constructor"
+import { WorkerHandle, WorkerPort } from "./worker";
 import { Config } from "./config";
 
 type _ResponseKind = WorkerResponse["type"]
 type _SelectResponse<T extends _ResponseKind> = Extract<WorkerResponse, { type: T }>;
 
 export class WorkerClient {
-    private worker: WorkerPort;
+    private worker: WorkerHandle;
     private queue: WorkerResponse[];
     private configuration: Config;
     private onmessage: ((event: WorkerResponse) => void) | null;
 
-    constructor(configuration: Config) {
-        this.worker = createSocketWorker();
+    constructor(configuration: Config, workerFactory: () => WorkerHandle) {
+        this.worker = workerFactory();
         this.configuration = configuration;
         this.queue = [];
         this.onmessage = null;
-        this.worker.addEventListener("message", (event: any) => {
-            const response = event.data as WorkerResponse;
-            if (configuration.debugEnabled) {
-                console.log("[wasminspect-web] [main thread] <- [worker thread] ", JSON.stringify(response))
-            }
-            if (this.onmessage) {
-                this.onmessage(response)
-            } else {
-                this.queue.push(response);
-            }
-        });
-        this.worker.addEventListener("error", (event: any) => {
-            console.error(`[wasminspect-web] [main thread] Unhandled error event: ${JSON.stringify(event.data)}`)
-        });
+       this.worker.addEventListener("message", (event: any) => {
+           const response = event.data as WorkerResponse;
+           if (configuration.debugEnabled) {
+               console.log("[wasminspect-web] [main thread] <- [worker thread] ", JSON.stringify(response))
+           }
+           if (this.onmessage) {
+               this.onmessage(response)
+           } else {
+               this.queue.push(response);
+           }
+       });
+       this.worker.addEventListener("error", (event: any) => {
+           console.error(`[wasminspect-web] [main thread] Unhandled error event: ${JSON.stringify(event.data)}`)
+       });
+    }
+
+    async terminate() {
+        await this.worker.terminate();
     }
 
     async receive<T extends _ResponseKind>(type: T): Promise<_SelectResponse<T>> {

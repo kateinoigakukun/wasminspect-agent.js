@@ -1,4 +1,4 @@
-import { WorkerPort } from "./worker";
+import { WorkerHandle, WorkerPort } from "./worker";
 
 export interface NodeWorker {
     postMessage(message: any, transfer?: any[]): void;
@@ -14,8 +14,11 @@ export interface NodeWorker {
     ): void;
     start?: () => void;
 }
+export interface NodeWorkerHandle extends NodeWorker {
+    terminate(): Promise<number>;
+}
 
-export default function wrapNodeWorker(nep: NodeWorker): WorkerPort {
+export function wrapNodeWorker(nep: NodeWorker): WorkerPort {
     const listeners = new WeakMap();
     return {
         postMessage: nep.postMessage.bind(nep),
@@ -38,5 +41,14 @@ export default function wrapNodeWorker(nep: NodeWorker): WorkerPort {
             nep.off("message", l);
             listeners.delete(eh);
         },
+    };
+}
+
+export function wrapNodeWorkerHandle(nep: NodeWorkerHandle): WorkerHandle {
+    return {
+        ...wrapNodeWorker(nep),
+        async terminate() {
+            await nep.terminate();
+        }
     };
 }
