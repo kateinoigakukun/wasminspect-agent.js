@@ -127,6 +127,7 @@ export const acceptWorkerRequest = (
                 return;
             }
             const request: SocketRequest = workerRequest.inner;
+            console.log(request)
             switch (request.type) {
                 case "TextRequest": {
                     const json = JSON.stringify(request.body);
@@ -135,6 +136,11 @@ export const acceptWorkerRequest = (
                 }
                 case "BinaryRequest": {
                     state.socket.send(request.body);
+                    break;
+                }
+                default: {
+                    console.error("Unexpected SocketRequest type: ", request)
+                    break;
                 }
             }
             break;

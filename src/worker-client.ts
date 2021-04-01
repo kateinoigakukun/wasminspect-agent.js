@@ -3,9 +3,12 @@ import { SocketRequest, SocketResponse, WorkerRequest, WorkerResponse } from "./
 import { WorkerHandle, WorkerPort } from "./worker";
 import { Config } from "./config";
 
+type _ResponseKind = WorkerResponse["type"]
+type _SelectResponse<T extends _ResponseKind> = Extract<WorkerResponse, { type: T }>;
+
 export class WorkerClient {
     private worker: WorkerHandle;
-    private queue: any[];
+    private queue: WorkerResponse[];
     private configuration: Config;
     private onmessage: ((event: any) => void) | null;
 
@@ -26,7 +29,7 @@ export class WorkerClient {
             }
         });
         this.worker.addEventListener("error", (event: any) => {
-            console.error(`[wasminspect-web] [main thread] Unhandled error event: ${JSON.stringify(event.data)}`)
+            console.error("[wasminspect-web] [main thread] Unhandled error event: ", event.data)
         });
     }
 
@@ -34,7 +37,35 @@ export class WorkerClient {
         await this.worker.terminate();
     }
 
-    async receive(): Promise<any> {
+    async receive<T extends _ResponseKind>(type: T): Promise<_SelectResponse<T>> {
+        const response = await this._receive();
+        if (response.type == type) {
+            return Promise.resolve(response as any);
+        } else {
+            return Promise.reject(new Error(`[wasminspect-web] Unexpected response: ${response}, expected: ${type}`));
+        }
+    }
+    blockingReceive<T extends _ResponseKind>(type: T): _SelectResponse<T> {
+        const response = this._blockingReceive();
+        if (response.type == type) {
+            return response as any;
+        } else {
+            throw new Error(`[wasminspect-web] Unexpected response: ${response}, expected: ${type}`);
+        }
+    }
+    postRequest(request: WorkerRequest, isBlocking: boolean = false) {
+        if (request.type == "SocketRequest" && request.inner.type == "BinaryRequest") {
+            this._postRequest(request, isBlocking, [request.inner.body.buffer]);
+        } else {
+            this._postRequest(request, isBlocking);
+        }
+    }
+
+    private _postRequest(data: any, isBlocking: boolean, transfer: any[] = []) {
+        this.worker.postMessage({ ...data, isBlocking }, transfer)
+    }
+
+    private async _receive(): Promise<WorkerResponse> {
         const found = this.queue.shift();
         if (found) {
             return Promise.resolve(found);
@@ -47,7 +78,7 @@ export class WorkerClient {
         })
     }
 
-    blockingReceive(): any {
+    private _blockingReceive(): WorkerResponse {
         const found = this.queue.shift();
         if (found) {
             return found;
@@ -100,44 +131,5 @@ export class WorkerClient {
         }
         const response = JSON.parse(jsonString);
         return response;
-    }
-
-    postRequest(data: any, isBlocking: boolean = false, transfer: any[] = []) {
-        this.worker.postMessage({ ...data, isBlocking }, transfer)
-    }
-}
-
-
-type _ResponseKind = WorkerResponse["type"]
-type _SelectResponse<T extends _ResponseKind> = Extract<WorkerResponse, { type: T }>;
-
-export class RpcClient {
-    private workerClient: WorkerClient;
-    constructor(worker: WorkerClient) {
-        this.workerClient = worker;
-    }
-
-    async receive<T extends _ResponseKind>(type: T): Promise<_SelectResponse<T>> {
-        const response = await this.workerClient.receive() as WorkerResponse;
-        if (response.type == type) {
-            return Promise.resolve(response as any);
-        } else {
-            return Promise.reject(new Error(`[wasminspect-web] Unexpected response: ${response}, expected: ${type}`));
-        }
-    }
-    blockingReceive<T extends _ResponseKind>(type: T): _SelectResponse<T> {
-        const response = this.workerClient.blockingReceive() as WorkerResponse;
-        if (response.type == type) {
-            return response as any;
-        } else {
-            throw new Error(`[wasminspect-web] Unexpected response: ${response}, expected: ${type}`);
-        }
-    }
-    postRequest(request: WorkerRequest, isBlocking: boolean = false) {
-        if (request.type == "SocketRequest" && request.inner.type == "BinaryRequest") {
-            this.workerClient.postRequest(request, isBlocking, [request.inner.body.buffer]);
-        } else {
-            this.workerClient.postRequest(request, isBlocking);
-        }
     }
 }

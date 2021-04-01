@@ -18,6 +18,7 @@ class EchoSocket {
         })
     }
     send(data) {
+        console.log("send: ", data)
         this.onmessage(data)
     }
 }

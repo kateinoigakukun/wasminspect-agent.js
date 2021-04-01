@@ -1,4 +1,4 @@
-import { RpcClient } from "./worker-client"
+import { RpcClient } from "./rpc-client";
 
 export class RemoteMemoryBuffer implements ArrayBuffer {
     [Symbol.toStringTag]: string;

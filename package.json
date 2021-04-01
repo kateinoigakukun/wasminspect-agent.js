@@ -6,6 +6,7 @@
     "build": "run-p build:node build:web",
     "build:node": "tsc -b",
     "build:web": "webpack",
+    "watch:node": "tsc -w",
     "test": "jest"
   },
   "module": "dist/index.js",
