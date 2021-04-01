@@ -4,6 +4,14 @@ export type WasmValue =
     { type: "F32", value: number } |
     { type: "F64", value: number }
 
+export type WasmExport = ({
+    type: "Memory",
+    memorySize: number,
+} | {
+    type: "Function" | "Global" | "Table",
+}) & {
+    name: string
+};
 
 export type TextRequest = {
     type: "Version",
@@ -24,15 +32,18 @@ export type SocketRequest = {
     body: Uint8Array,
 }
 
+export type InitResponse = {
+    type: "Init",
+    exports: WasmExport[],
+};
+
 export type TextResponse = {
     type: "Version",
     value: String,
 } | {
-    type: "Init"
-} | {
     type: "CallResult",
     values: WasmValue[]
-}
+} | InitResponse;
 
 export type SocketResponse = {
     type: "TextResponse",

@@ -1,13 +1,9 @@
+import { Config } from "./config";
 import { SocketRequest, SocketResponse } from "./socket-rpc"
-
-class WorkerBlockingToken {
-    buffer: Int32Array;
-}
 
 export type WorkerRequest = {
     type: "Configure",
-    debugEnabled: boolean,
-    socketAddr: string,
+    inner: Config,
 } | {
     type: "SocketRequest",
     inner: SocketRequest,

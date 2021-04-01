@@ -21,7 +21,7 @@ class BlockingQueue<T> {
 
     consume(f: (message: T) => void) {
         if (this.pendings.length > 0) {
-            const head = this.pendings.shift();
+            const head = this.pendings.shift()!;
             f(head);
             return;
         } else {
@@ -47,7 +47,6 @@ type State = {
 
 class Socket {
     ws: typeof WS.WebSocket["prototype"];
-    onmessage: () => void;
 
     constructor(addr: string) {
         const ws = new WS.WebSocket(addr);
@@ -70,6 +69,7 @@ const acceptSocketEvent = (eventData: string | ArrayBuffer, state: State) => {
         const body = JSON.parse(eventData) as TextResponse;
         response = { type: "SocketResponse", inner: { type: "TextResponse", body } } as WorkerResponse;
     } else {
+        throw new Error("BinaryResponse is not supported yet");
     }
 
     if (state.isBlocking) {
@@ -88,8 +88,8 @@ const acceptWorkerRequest = (workerRequest: WorkerRequest & { isBlocking: boolea
 
     switch (workerRequest.type) {
         case "Configure": {
-            state.socket = new Socket(workerRequest.socketAddr);
-            state.debugEnabled = workerRequest.debugEnabled;
+            state.socket = new Socket(workerRequest.inner.socketAddr);
+            state.debugEnabled = workerRequest.inner.debugEnabled;
             break;
         }
         case "BlockingPrologue": {
@@ -121,6 +121,10 @@ const acceptWorkerRequest = (workerRequest: WorkerRequest & { isBlocking: boolea
             break;
         }
         case "SocketRequest": {
+            if (!state.socket) {
+                console.error("SocketRequest should be called after Configure");
+                return;
+            }
             const request: SocketRequest = workerRequest.inner;
             switch (request.type) {
                 case "TextRequest": {
