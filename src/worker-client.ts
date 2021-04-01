@@ -79,10 +79,6 @@ export class WorkerClient {
     }
 
     private _blockingReceive(): WorkerResponse {
-        const found = this.queue.shift();
-        if (found) {
-            return found;
-        }
         const prologue: () => number = () => {
             // the last byte is reserved for notification flag.
             const sizeBuffer = new SharedArrayBuffer(5);
