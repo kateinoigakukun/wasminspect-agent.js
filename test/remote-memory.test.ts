@@ -46,90 +46,109 @@ class MockRpcClient implements RpcClient {
 }
 
 describe("remote-memory", () => {
-    it("length", () => {
-        for (const constructor of [Uint8Array, Uint16Array, Uint32Array]) {
-            const WrappedArray = wrapTypedArray(constructor);
-            const client = new MockRpcClient();
-            const buffer = new RemoteMemoryBuffer("dummy", 0, 4, client);
-            const target = new WrappedArray(buffer);
-            const original = new constructor(new Uint8Array(4).buffer);
-            client.memory = Uint8Array.from(Array(4).fill(0));
-            expect(target.length).toBe(original.length);
-        }
+    const constructors = [Uint8Array, Uint16Array, Uint32Array]
+    test.each(constructors)("%p.length", (constructor) => {
+        const byteLength = 16;
+        const WrappedArray = wrapTypedArray(constructor);
+        const client = new MockRpcClient();
+        const buffer = new RemoteMemoryBuffer("dummy", 0, byteLength, client);
+        const target = new WrappedArray(buffer);
+        const original = new constructor(new Uint8Array(byteLength).buffer);
+        client.memory = Uint8Array.from(Array(byteLength).fill(0));
+
+        expect(target.length).toBe(original.length);
     })
 
-    it("subscript get 1 byte number", () => {
-        for (const original of [Uint8Array, Uint16Array, Uint32Array]) {
-            const WrappedArray = wrapTypedArray(original);
-            const client = new MockRpcClient();
-            const buffer = new RemoteMemoryBuffer("dummy", 0, 4, client);
-            const obj = new WrappedArray(buffer);
-            client.memory = Uint8Array.from(Array(4).fill(0));
-            expect(obj[0]).toBe(0);
-            client.memory[0] = 1;
-            expect(obj[0]).toBe(1);
-            // expect(obj.length).toBe(1);
-        }
+    test.each(constructors)("%p subscript get 1 byte number", (constructor) => {
+        const byteLength = 16;
+        const WrappedArray = wrapTypedArray(constructor);
+        const client = new MockRpcClient();
+        const buffer = new RemoteMemoryBuffer("dummy", 0, byteLength, client);
+        const target = new WrappedArray(buffer);
+        const originalBuffer = new Uint8Array(byteLength);
+        const original = new constructor(originalBuffer.buffer);
+        client.memory = Uint8Array.from(Array(byteLength).fill(0));
+
+        expect(target[0]).toBe(original[0]);
+        client.memory[0] = 1;
+        originalBuffer[0] = 1;
+        expect(target[0]).toBe(originalBuffer[0]);
+        expect(target[byteLength]).toBe(undefined);
+
+        expect(target[-1]).toBe(originalBuffer[-1]);
     })
 
     it("subscript get multi-bytes number", () => {
+        const byteLength = 16;
         const WrappedArray = wrapTypedArray(Uint16Array);
         const client = new MockRpcClient();
-        const buffer = new RemoteMemoryBuffer("dummy", 0, 16, client);
-        const obj = new WrappedArray(buffer);
+        const buffer = new RemoteMemoryBuffer("dummy", 0, byteLength, client);
+        const target = new WrappedArray(buffer);
 
-        const memoryBuffer = new ArrayBuffer(16);
+        const memoryBuffer = new ArrayBuffer(byteLength);
         client.memory = new Uint8Array(memoryBuffer);
 
-        const multiByteView = new Uint16Array(memoryBuffer);
-        multiByteView[0] = 0xFF00;
+        (new Uint16Array(memoryBuffer))[0] = 0xFF00;
         expect(client.memory[0]).toBe(0x00);
         expect(client.memory[1]).toBe(0xFF);
-        expect(obj[0]).toBe(0xFF00);
+        expect(target[0]).toBe(0xFF00);
     })
 
-    it("subscript set 1 byte number", () => {
-        for (const original of [Uint8Array, Uint16Array, Uint32Array]) {
-            const WrappedArray = wrapTypedArray(original);
-            const client = new MockRpcClient();
-            const buffer = new RemoteMemoryBuffer("dummy", 0, 16, client);
-            const obj = new WrappedArray(buffer);
-            client.memory = Uint8Array.from(Array(16).fill(0));
+    test.each(constructors)("%p subscript set 1 byte number", (constructor) => {
+        const byteLength = 16;
+        const WrappedArray = wrapTypedArray(constructor);
+        const client = new MockRpcClient();
+        const buffer = new RemoteMemoryBuffer("dummy", 0, byteLength, client);
+        const target = new WrappedArray(buffer);
+        const originalBuffer = new Uint8Array(byteLength);
+        const original = new constructor(originalBuffer.buffer);
+        client.memory = Uint8Array.from(Array(16).fill(0));
 
-            obj[0] = 1;
-            expect(client.memory[0]).toBe(1);
+        target[0] = 1;
+        original[0] = 1;
+        expect(client.memory[0]).toBe(originalBuffer[0]);
 
-            obj[16] = 1;
-            expect(obj[16]).toBe(undefined);
-        }
+        target[byteLength/constructor.BYTES_PER_ELEMENT] = 1;
+        original[byteLength/constructor.BYTES_PER_ELEMENT] = 1;
+        expect(target[byteLength]).toBe(undefined);
+
+        target[-1] = 1;
+        original[-1] = 1;
+        expect(client.memory).toEqual(originalBuffer);
     })
 
     it("subscript set multi-bytes number", () => {
+        const byteLength = 16;
         const WrappedArray = wrapTypedArray(Uint16Array);
         const client = new MockRpcClient();
         const buffer = new RemoteMemoryBuffer("dummy", 0, 16, client);
-        const obj = new WrappedArray(buffer);
+        const target = new WrappedArray(buffer);
 
-        const memoryBuffer = new ArrayBuffer(16);
+        const memoryBuffer = new ArrayBuffer(byteLength);
         client.memory = new Uint8Array(memoryBuffer);
 
-        obj[0] = 0xFF00;
+        target[0] = 0xFF00;
         expect(client.memory[0]).toBe(0x00);
         expect(client.memory[1]).toBe(0xFF);
-        expect(obj[0]).toBe(0xFF00);
+        expect(target[0]).toBe(0xFF00);
+        target[byteLength] = 1;
+        expect(client.memory[byteLength/2]).toBe(0x00);
+        expect(client.memory[byteLength/2]).toBe(0x00);
     })
 
-    it("slice", () => {
-        const WrappedArray = wrapTypedArray(Uint8Array);
+    test.each(constructors)("%p.slice", (constructor) => {
+        const byteLength = 16;
+        const WrappedArray = wrapTypedArray(constructor);
         const client = new MockRpcClient();
-        const buffer = new RemoteMemoryBuffer("dummy", 0, 16, client);
+        const buffer = new RemoteMemoryBuffer("dummy", 0, byteLength, client);
         const target = new WrappedArray(buffer);
-        const original = new Uint8Array(16);
+        const originalBuffer = new Uint8Array(byteLength);
+        const original = new constructor(originalBuffer.buffer);
 
         client.memory = Uint8Array.from(Array(16).fill(0));
         for (let i = 0; i < 16; i++) {
             client.memory[i] = i;
-            original[i] = i;
+            originalBuffer[i] = i;
         }
 
         const targetSlice0 = target.slice(1, 4);
@@ -147,6 +166,16 @@ describe("remote-memory", () => {
         // Without end
         const targetSlice1 = target.slice(1);
         const originalSlice1 = original.slice(1);
-        expect(targetSlice1[0]).toBe(originalSlice1[0]);
+        expect(targetSlice1).toEqual(originalSlice1);
+
+        // Negative start
+        const targetSlice2 = target.slice(-1);
+        const originalSlice2 = original.slice(-1);
+        expect(targetSlice2).toEqual(originalSlice2);
+
+        // Negative end
+        const targetSlice3 = target.slice(0, -1);
+        const originalSlice3 = original.slice(0, -1);
+        expect(targetSlice3).toEqual(originalSlice3);
     })
 })

@@ -38,9 +38,15 @@ export class RemoteMemoryBuffer implements ArrayBuffer {
     }
 
     slice(start: number, end?: number): ArrayBuffer {
-        const _end = end || this.byteLength;
-        if (start < 0 || this.byteLength < _end) {
+        let _end = end || this.byteLength;
+        if (this.byteLength < _end) {
             return new ArrayBuffer(0);
+        }
+        if (start < 0) {
+            start = this.byteLength + start;
+        }
+        if (_end < 0) {
+            _end = this.byteLength + _end;
         }
         this.rpc.textRequest({
             type: "LoadMemory",
@@ -53,7 +59,7 @@ export class RemoteMemoryBuffer implements ArrayBuffer {
     }
 
     subscriptGetter(index: number, BYTES_PER_ELEMENT: number): number | undefined {
-        if (this.byteLength <= index * BYTES_PER_ELEMENT) {
+        if (index < 0 || this.byteLength <= index * BYTES_PER_ELEMENT) {
             return undefined
         }
         this.rpc.textRequest({
@@ -66,7 +72,7 @@ export class RemoteMemoryBuffer implements ArrayBuffer {
     }
 
     subscriptSetter(index: number, BYTES_PER_ELEMENT: number, value: number): boolean {
-        if (this.byteLength <= index) {
+        if (index < 0 || this.byteLength <= index) {
             return true;
         }
         this.rpc.textRequest({
@@ -94,38 +100,40 @@ export function wrapTypedArray<
     }
     const instanceHandler: ProxyHandler<{ remoteBuffer: RemoteMemoryBuffer }> = {
         get(target, prop, receiver) {
-            if (typeof prop === "string") {
-                const propAsNumber = Number(prop);
-                if (!isNaN(propAsNumber)) {
-                    return target.remoteBuffer.subscriptGetter(propAsNumber, constructor.BYTES_PER_ELEMENT);
-                }
-                switch (prop) {
-                    case "length":
-                        return target.remoteBuffer.byteLength / constructor.BYTES_PER_ELEMENT;
-                    case "slice": {
-                        return (start: number, end?: number) => {
-                            const remoteBuffer = target.remoteBuffer.slice(
-                                start * constructor.BYTES_PER_ELEMENT,
-                                (() => {
-                                    if (end) {
-                                        return end * constructor.BYTES_PER_ELEMENT;
-                                    }
-                                    return undefined;
-                                })()
-                            );
-                            return new constructor(remoteBuffer);
-                        }
+            if (typeof prop !== "string") {
+                return Reflect.get(target, prop, receiver);
+            }
+            const propAsNumber = Number(prop);
+            if (!isNaN(propAsNumber)) {
+                return target.remoteBuffer.subscriptGetter(propAsNumber, constructor.BYTES_PER_ELEMENT);
+            }
+            switch (prop) {
+                case "length":
+                    return target.remoteBuffer.byteLength / constructor.BYTES_PER_ELEMENT;
+                case "slice": {
+                    return (start: number, end?: number) => {
+                        const remoteBuffer = target.remoteBuffer.slice(
+                            start * constructor.BYTES_PER_ELEMENT,
+                            (() => {
+                                if (end) {
+                                    return end * constructor.BYTES_PER_ELEMENT;
+                                }
+                                return undefined;
+                            })()
+                        );
+                        return new constructor(remoteBuffer);
                     }
                 }
             }
             return Reflect.get(target, prop, receiver);
         },
         set(target, prop, value, receiver) {
-            if (typeof prop === "string") {
-                const propAsNumber = Number(prop);
-                if (!isNaN(propAsNumber)) {
-                    return target.remoteBuffer.subscriptSetter(propAsNumber, constructor.BYTES_PER_ELEMENT, value);
-                }
+            if (typeof prop !== "string") {
+                return Reflect.set(target, prop, value, receiver);
+            }
+            const propAsNumber = Number(prop);
+            if (!isNaN(propAsNumber)) {
+                return target.remoteBuffer.subscriptSetter(propAsNumber, constructor.BYTES_PER_ELEMENT, value);
             }
             return Reflect.set(target, prop, value, receiver);
         },
