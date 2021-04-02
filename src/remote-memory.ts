@@ -33,29 +33,30 @@ export class RemoteMemoryBuffer implements ArrayBuffer {
         this.rpc = rpc;
     }
 
-    private _resolveSubrange(start: number, end?: number): { begin: number, end: number } | undefined {
+    private _resolveSubrange(start?: number, end?: number): { begin: number, end: number } | undefined {
+        let _start = start || 0;
         let _end = end || this.byteLength;
         if (this.byteLength < _end) {
             return undefined;
         }
-        if (start < 0) {
-            start = this.byteLength + start;
+        if (_start < 0) {
+            _start = this.byteLength + _start;
         }
         if (_end < 0) {
             _end = this.byteLength + _end;
         }
-        return {begin: start, end: _end}
+        return {begin: _start, end: _end}
     }
 
     subarray(start?: number, end?: number): RemoteMemoryBuffer {
-        const range = this._resolveSubrange(start || 0, end);
+        const range = this._resolveSubrange(start, end);
         if (!range) {
             return new RemoteMemoryBuffer(this.name, 0, 0, this.rpc);
         }
         return new RemoteMemoryBuffer(this.name, this.offset + range.begin, range.end - range.begin, this.rpc);
     }
 
-    slice(start: number, end?: number): ArrayBuffer {
+    slice(start?: number, end?: number): ArrayBuffer {
         const range = this._resolveSubrange(start, end);
         if (!range) {
             return new ArrayBuffer(0);
@@ -139,9 +140,9 @@ export function wrapTypedArray<
                     }
                 }
                 case "slice": {
-                    return (start: number, end?: number) => {
+                    return (start?: number, end?: number) => {
                         const remoteBuffer = target.remoteBuffer.slice(
-                            start * constructor.BYTES_PER_ELEMENT,
+                            _optionMap(start, (v) => v * constructor.BYTES_PER_ELEMENT),
                             _optionMap(end, (v) => v * constructor.BYTES_PER_ELEMENT),
                         );
                         return new constructor(remoteBuffer);

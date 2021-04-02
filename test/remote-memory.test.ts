@@ -161,20 +161,25 @@ describe("remote-memory", () => {
         originalSlice0[0] = 2;
         expect(target[1]).toBe(original[1]);
 
-        // Without end
-        const targetSlice1 = target.slice(1);
-        const originalSlice1 = original.slice(1);
+        // Without begin
+        const targetSlice1 = target.slice();
+        const originalSlice1 = original.slice();
         expect(targetSlice1).toEqual(originalSlice1);
 
-        // Negative start
-        const targetSlice2 = target.slice(-1);
-        const originalSlice2 = original.slice(-1);
+        // Without end
+        const targetSlice2 = target.slice(1);
+        const originalSlice2 = original.slice(1);
         expect(targetSlice2).toEqual(originalSlice2);
 
-        // Negative end
-        const targetSlice3 = target.slice(0, -1);
-        const originalSlice3 = original.slice(0, -1);
+        // Negative start
+        const targetSlice3 = target.slice(-1);
+        const originalSlice3 = original.slice(-1);
         expect(targetSlice3).toEqual(originalSlice3);
+
+        // Negative end
+        const targetSlice4 = target.slice(0, -1);
+        const originalSlice4 = original.slice(0, -1);
+        expect(targetSlice4).toEqual(originalSlice4);
     })
 
     test.each(constructors)("%p.subarray", (constructor) => {
