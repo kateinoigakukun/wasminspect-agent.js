@@ -75,6 +75,13 @@ export class RemoteMemoryBuffer implements ArrayBuffer {
         return !(start < 0 || this.byteLength < end);
     }
 
+    getWithCanonicalIndex(start: number, end: number): ArrayBuffer | undefined {
+        if (!this._validRange(start, end)) {
+            return undefined;
+        }
+        return this.slice(start, end);
+    }
+
     subscriptGetter(index: number, BYTES_PER_ELEMENT: number): number | undefined {
         if (index < 0 || this.byteLength <= index * BYTES_PER_ELEMENT) {
             return undefined
@@ -111,22 +118,39 @@ function _optionMap<T, U>(v: T | undefined, transform: (v: T) => U): U | undefin
 
 export function wrapDataView(constructor: DataViewConstructor) {
     const constructWrapper = (remoteBuffer: RemoteMemoryBuffer) => {
+        const fixedNumberGetter = (
+            byteOffset: number,
+            buffer: RemoteMemoryBuffer,
+            length: number, getter: (view: DataView, byteOffset: number) => number
+        ) => {
+                const bytes = buffer.getWithCanonicalIndex(byteOffset, byteOffset + length);
+                if (!bytes) {
+                    throw new RangeError("Offset is outside the bounds of the DataView")
+                }
+                const view = new constructor(bytes);
+                return getter(view, byteOffset)
+        }
         return {
             remoteBuffer,
             getFloat32(byteOffset: number, littleEndian?: boolean): number {
-                const bytes = this.remoteBuffer.slice(byteOffset, byteOffset + 8);
-                const view = new constructor(bytes);
-                return view.getFloat32(0, littleEndian);
+                return fixedNumberGetter(byteOffset, this.remoteBuffer, 4, (v, o) => {
+                    return v.getFloat32(o, littleEndian);
+                })
             },
             getFloat64(byteOffset: number, littleEndian?: boolean): number {
-                const bytes = this.remoteBuffer.slice(byteOffset, byteOffset + 8);
-                const view = new constructor(bytes);
-                return view.getFloat64(0, littleEndian);
+                return fixedNumberGetter(byteOffset, this.remoteBuffer, 8, (v, o) => {
+                    return v.getFloat64(o, littleEndian);
+                })
             },
             getInt8(byteOffset: number): number {
-                const bytes = this.remoteBuffer.slice(byteOffset, byteOffset + 8);
-                const view = new constructor(bytes);
-                return view.getInt8(0);
+                return fixedNumberGetter(byteOffset, this.remoteBuffer, 1, (v, o) => {
+                    return v.getInt8(o);
+                })
+            },
+            getInt16(byteOffset: number, littleEndian?: boolean): number {
+                return fixedNumberGetter(byteOffset, this.remoteBuffer, 2, (v, o) => {
+                    return v.getInt16(o, littleEndian);
+                })
             }
         }
     }
@@ -164,10 +188,10 @@ export function wrapTypedArray<
             if (!isNaN(propAsNumber)) {
                 const start = propAsNumber * constructor.BYTES_PER_ELEMENT;
                 const end = start + constructor.BYTES_PER_ELEMENT;
-                if (!target.remoteBuffer._validRange(start, end)) {
+                const bytes = target.remoteBuffer.getWithCanonicalIndex(start, end)
+                if (!bytes) {
                     return undefined;
                 }
-                const bytes = target.remoteBuffer.slice(start, end);
                 const view = new constructor(bytes);
                 return view[0];
             }

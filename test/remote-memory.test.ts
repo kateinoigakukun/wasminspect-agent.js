@@ -252,6 +252,12 @@ describe("DataView", () => {
             }, values: [1, -1, 0xFF, 0xFFFF],
             writer: Int8Array,
         },
+        {
+            targetMethod: (view: DataView, offset: any, endian: any) => {
+                return view.getInt16(offset)
+            }, values: [1, -1, 0xFF, 0xFFFF, -0xFF],
+            writer: Int16Array,
+        },
     ])("%s", (props) => {
         const byteLength = 16;
         const WrappedView = wrapDataView(DataView);
