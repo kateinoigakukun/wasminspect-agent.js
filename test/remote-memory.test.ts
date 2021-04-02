@@ -153,9 +153,7 @@ describe("remote-memory", () => {
 
         const targetSlice0 = target.slice(1, 4);
         const originalSlice0 = original.slice(1, 4);
-        for (let i = 0; i < 5; i++) {
-            expect(targetSlice0[i]).toBe(originalSlice0[i]);
-        }
+        expect(targetSlice0).toEqual(originalSlice0);
 
         // Check that write operation to sliced array should not be affected
         // original array.
@@ -177,5 +175,54 @@ describe("remote-memory", () => {
         const targetSlice3 = target.slice(0, -1);
         const originalSlice3 = original.slice(0, -1);
         expect(targetSlice3).toEqual(originalSlice3);
+    })
+
+    test.each(constructors)("%p.subarray", (constructor) => {
+        const byteLength = 16;
+        const WrappedArray = wrapTypedArray(constructor);
+        const client = new MockRpcClient();
+        const buffer = new RemoteMemoryBuffer("dummy", 0, byteLength, client);
+        const target = new WrappedArray(buffer);
+        const originalBuffer = new Uint8Array(byteLength);
+        const original = new constructor(originalBuffer.buffer);
+
+        client.memory = Uint8Array.from(Array(16).fill(0));
+        for (let i = 0; i < 16; i++) {
+            client.memory[i] = i;
+            originalBuffer[i] = i;
+        }
+
+        const targetSlice0 = target.subarray(1, 4);
+        const originalSlice0 = original.subarray(1, 4);
+        expect(targetSlice0[0]).toEqual(originalSlice0[0]);
+
+        targetSlice0[0] = 2;
+        originalSlice0[0] = 2;
+        expect(target[1]).toBe(original[1]);
+
+        // Without begin
+        const targetSub1 = target.subarray(1);
+        const originalSub1 = original.subarray(1);
+        expect(targetSub1.length).toBe(originalSub1.length)
+        expect(targetSub1[targetSub1.length - 1]).toEqual(originalSub1[originalSub1.length - 1]);
+
+        // Without end
+        const targetSub2 = target.subarray(1);
+        const originalSub2 = original.subarray(1);
+        expect(targetSub2.length).toBe(originalSub2.length)
+        expect(targetSub2[targetSub2.length - 1]).toEqual(originalSub2[originalSub2.length - 1]);
+
+        // Negative start
+        const targetSub3 = target.subarray(-1);
+        const originalSub3 = original.subarray(-1);
+        expect(targetSub3.length).toBe(originalSub3.length)
+        expect(targetSub3[0]).toEqual(originalSub3[0]);
+
+        // Negative end
+        const targetSub4 = target.subarray(0, -1);
+        const originalSlice3 = original.subarray(0, -1);
+        expect(targetSub4[0]).toEqual(originalSlice3[0]);
+        expect(targetSub4.length).toBe(originalSlice3.length)
+        expect(targetSub4[targetSub4.length - 1]).toEqual(originalSlice3[originalSlice3.length - 1]);
     })
 })

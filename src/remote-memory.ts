@@ -33,14 +33,10 @@ export class RemoteMemoryBuffer implements ArrayBuffer {
         this.rpc = rpc;
     }
 
-    subarray(start: number, end: number, BYTES_PER_ELEMENT: number): RemoteMemoryBuffer {
-        return new RemoteMemoryBuffer(this.name, this.offset + start, end - start, this.rpc);
-    }
-
-    slice(start: number, end?: number): ArrayBuffer {
+    private _resolveSubrange(start: number, end?: number): { begin: number, end: number } | undefined {
         let _end = end || this.byteLength;
         if (this.byteLength < _end) {
-            return new ArrayBuffer(0);
+            return undefined;
         }
         if (start < 0) {
             start = this.byteLength + start;
@@ -48,10 +44,26 @@ export class RemoteMemoryBuffer implements ArrayBuffer {
         if (_end < 0) {
             _end = this.byteLength + _end;
         }
+        return {begin: start, end: _end}
+    }
+
+    subarray(start?: number, end?: number): RemoteMemoryBuffer {
+        const range = this._resolveSubrange(start || 0, end);
+        if (!range) {
+            return new RemoteMemoryBuffer(this.name, 0, 0, this.rpc);
+        }
+        return new RemoteMemoryBuffer(this.name, this.offset + range.begin, range.end - range.begin, this.rpc);
+    }
+
+    slice(start: number, end?: number): ArrayBuffer {
+        const range = this._resolveSubrange(start, end);
+        if (!range) {
+            return new ArrayBuffer(0);
+        }
         this.rpc.textRequest({
             type: "LoadMemory",
-            offset: this.offset + start,
-            length: (_end - start)
+            offset: this.offset + range.begin,
+            length: (range.end - range.begin)
         }, true)
         const result = this.rpc.blockingTextResponse("LoadMemoryResult");
         const bytes = new Uint8Array(result.bytes);
@@ -85,6 +97,13 @@ export class RemoteMemoryBuffer implements ArrayBuffer {
     }
 }
 
+function _optionMap<T, U>(v: T | undefined, transform: (v: T) => U): U | undefined {
+    if (v) {
+        return transform(v);
+    }
+    return undefined;
+}
+
 export function wrapTypedArray<
     Constructor extends
     Uint8ArrayConstructor |
@@ -110,16 +129,20 @@ export function wrapTypedArray<
             switch (prop) {
                 case "length":
                     return target.remoteBuffer.byteLength / constructor.BYTES_PER_ELEMENT;
+                case "subarray": {
+                    return (start?: number, end?: number) => {
+                        const remoteBuffer = target.remoteBuffer.subarray(
+                            _optionMap(start, (v) => v * constructor.BYTES_PER_ELEMENT),
+                            _optionMap(end, (v) => v * constructor.BYTES_PER_ELEMENT),
+                        );
+                        return constructProxy(remoteBuffer);
+                    }
+                }
                 case "slice": {
                     return (start: number, end?: number) => {
                         const remoteBuffer = target.remoteBuffer.slice(
                             start * constructor.BYTES_PER_ELEMENT,
-                            (() => {
-                                if (end) {
-                                    return end * constructor.BYTES_PER_ELEMENT;
-                                }
-                                return undefined;
-                            })()
+                            _optionMap(end, (v) => v * constructor.BYTES_PER_ELEMENT),
                         );
                         return new constructor(remoteBuffer);
                     }
