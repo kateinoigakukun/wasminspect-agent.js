@@ -254,9 +254,33 @@ describe("DataView", () => {
         },
         {
             targetMethod: (view: DataView, offset: any, endian: any) => {
-                return view.getInt16(offset)
+                return view.getInt16(offset, endian)
             }, values: [1, -1, 0xFF, 0xFFFF, -0xFF],
             writer: Int16Array,
+        },
+        {
+            targetMethod: (view: DataView, offset: any, endian: any) => {
+                return view.getInt32(offset, endian)
+            }, values: [1, -1, 0xFF, 0xFFFF, -0xFF, 0xFFFFFF, -0xFFFFFF],
+            writer: Int32Array,
+        },
+        {
+            targetMethod: (view: DataView, offset: any, endian: any) => {
+                return view.getUint8(offset)
+            }, values: [1, -1, 0xFF, 0xFFFF],
+            writer: Int32Array,
+        },
+        {
+            targetMethod: (view: DataView, offset: any, endian: any) => {
+                return view.getUint16(offset, endian)
+            }, values: [1, -1, 0xFF, 0xFFFF, -0xFF],
+            writer: Int32Array,
+        },
+        {
+            targetMethod: (view: DataView, offset: any, endian: any) => {
+                return view.getUint32(offset, endian)
+            }, values: [1, -1, 0xFF, 0xFFFF, -0xFF, 0xFFFFFF, -0xFFFFFF],
+            writer: Int32Array,
         },
     ])("%s", (props) => {
         const byteLength = 16;

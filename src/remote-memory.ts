@@ -151,7 +151,27 @@ export function wrapDataView(constructor: DataViewConstructor) {
                 return fixedNumberGetter(byteOffset, this.remoteBuffer, 2, (v, o) => {
                     return v.getInt16(o, littleEndian);
                 })
-            }
+            },
+            getInt32(byteOffset: number, littleEndian?: boolean): number {
+                return fixedNumberGetter(byteOffset, this.remoteBuffer, 4, (v, o) => {
+                    return v.getInt32(o, littleEndian);
+                })
+            },
+            getUint8(byteOffset: number): number {
+                return fixedNumberGetter(byteOffset, this.remoteBuffer, 1, (v, o) => {
+                    return v.getUint8(o);
+                })
+            },
+            getUint16(byteOffset: number, littleEndian?: boolean): number {
+                return fixedNumberGetter(byteOffset, this.remoteBuffer, 2, (v, o) => {
+                    return v.getUint16(o, littleEndian);
+                })
+            },
+            getUint32(byteOffset: number, littleEndian?: boolean): number {
+                return fixedNumberGetter(byteOffset, this.remoteBuffer, 4, (v, o) => {
+                    return v.getUint32(o, littleEndian);
+                })
+            },
         }
     }
     const constructorHandler: ProxyHandler<DataViewConstructor> = {
