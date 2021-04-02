@@ -9,7 +9,7 @@ const state = {
     waitingEpilogue: new BlockingQueue(),
 }
 
-class MockSocket {
+class EchoSocket {
     constructor(variant) {
         this.onmessage = () => { };
         this.onopen = () => { };
@@ -19,7 +19,16 @@ class MockSocket {
         })
     }
     send(data) {
-        console.log(data)
+        switch (variant.type) {
+            case "SIMPLE_ECHO": {
+                this.onmessage({ data })
+            }
+            case "DELAY_ECHO": {
+                setTimeout(() => {
+                    this.onmessage({ data })
+                }, variant.duration);
+            }
+        }
     }
 }
 
@@ -27,8 +36,12 @@ const ctx = getContext();
 let variant = undefined;
 
 ctx.addEventListener("message", (event) => {
+    if (!variant) {
+        variant = event.data;
+        return;
+    }
     const workerRequest = event.data;
     acceptWorkerRequest(workerRequest, state, ctx, () => {
-        return new MockSocket(variant);
+        return new EchoSocket(variant);
     });
 })

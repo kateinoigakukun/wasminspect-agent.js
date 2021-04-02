@@ -52,7 +52,9 @@ export type State = {
 export interface Socket {
   onopen: (event: any) => void;
   onmessage: (event: any) => void;
+  onclose: (event: any) => void;
   send(data: any): void;
+  close(): void;
 }
 
 export const acceptSocketEvent = (
@@ -108,8 +110,15 @@ export const acceptWorkerRequest = (
       socket.onmessage = (event: any) => {
         acceptSocketEvent(event.data, state, ctx);
       };
+      socket.onclose = (event: any) => {
+        ctx.postMessage({ type: "Terminated" } as WorkerResponse);
+      };
       state.debugEnabled = workerRequest.inner.debugEnabled;
       ctx.postMessage({ type: "SetConfiguration" } as WorkerResponse);
+      break;
+    }
+    case "Terminate": {
+      state.socket?.close();
       break;
     }
     case "BlockingPrologue": {

@@ -6,6 +6,9 @@ export type WorkerRequest =
       inner: Config;
     }
   | {
+      type: "Terminate";
+    }
+  | {
       type: "SocketRequest";
       inner: SocketRequest;
     }
@@ -39,6 +42,9 @@ export type WorkerResponse =
     }
   | {
       type: "SetConfiguration";
+    }
+  | {
+      type: "Terminated";
     }
   | {
       type: "SocketResponse";

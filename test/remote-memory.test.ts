@@ -55,6 +55,10 @@ class MockRpcClient implements RpcClient {
       }
     }
   }
+
+  terminate(): Promise<void> {
+    return Promise.resolve();
+  }
 }
 
 describe("TypedArray", () => {

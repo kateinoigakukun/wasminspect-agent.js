@@ -15,7 +15,7 @@ type Variant =
     };
 
 function createSocketWorker(variant: Variant): WorkerHandle {
-  const worker = new Worker(path.join(__dirname, "./mock-worker.mjs"));
+  const worker = new Worker(path.join(__dirname, "./echo-worker.mjs"));
   worker.postMessage(variant);
   return wrapNodeWorkerHandle(worker);
 }
