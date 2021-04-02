@@ -1,4 +1,6 @@
 // @ts-nocheck
-import SocketWorker from "./index.worker"
+import SocketWorker from "./index.worker";
 
-export default function () { return new SocketWorker() };
+export default function () {
+  return new SocketWorker();
+}

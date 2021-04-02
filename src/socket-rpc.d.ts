@@ -1,51 +1,64 @@
 export type WasmValue =
-    { type: "I32", value: number } |
-    { type: "I64", value: number } |
-    { type: "F32", value: number } |
-    { type: "F64", value: number }
+  | { type: "I32"; value: number }
+  | { type: "I64"; value: number }
+  | { type: "F32"; value: number }
+  | { type: "F64"; value: number };
 
-export type WasmExport = ({
-    type: "Memory",
-    memorySize: number,
-} | {
-    type: "Function" | "Global" | "Table",
-}) & {
-    name: string
+export type WasmExport = (
+  | {
+      type: "Memory";
+      memorySize: number;
+    }
+  | {
+      type: "Function" | "Global" | "Table";
+    }
+) & {
+  name: string;
 };
 
-export type TextRequest = {
-    type: "Version",
-} | {
-    type: "CallExported",
-    name: string,
-    args: number[],
-} | {
-    type: "CallResult",
-    values: number[],
-} | {
-    type: "LoadMemory",
-    offset: number,
-    length: number,
-} | {
-    type: "StoreMemory",
-    offset: number,
-    bytes: number[],
-}
+export type TextRequest =
+  | {
+      type: "Version";
+    }
+  | {
+      type: "CallExported";
+      name: string;
+      args: number[];
+    }
+  | {
+      type: "CallResult";
+      values: number[];
+    }
+  | {
+      type: "LoadMemory";
+      offset: number;
+      length: number;
+    }
+  | {
+      type: "StoreMemory";
+      offset: number;
+      bytes: number[];
+    };
 
 export type InitResponse = {
-    type: "Init",
-    exports: WasmExport[],
+  type: "Init";
+  exports: WasmExport[];
 };
 
-export type TextResponse = {
-    type: "Version",
-    value: String,
-} | {
-    type: "CallResult",
-    values: WasmValue[]
-} | {
-    type: "LoadMemoryResult",
-    bytes: number[],
-} | {
-    type: "StoreMemoryResult",
-} | InitResponse;
+export type TextResponse =
+  | {
+      type: "Version";
+      value: String;
+    }
+  | {
+      type: "CallResult";
+      values: WasmValue[];
+    }
+  | {
+      type: "LoadMemoryResult";
+      bytes: number[];
+    }
+  | {
+      type: "StoreMemoryResult";
+    }
+  | InitResponse;
