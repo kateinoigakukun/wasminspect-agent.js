@@ -45,7 +45,7 @@ export class RemoteMemoryBuffer implements ArrayBuffer {
         if (_end < 0) {
             _end = this.byteLength + _end;
         }
-        return {begin: _start, end: _end}
+        return { begin: _start, end: _end }
     }
 
     subarray(start?: number, end?: number): RemoteMemoryBuffer {
@@ -75,36 +75,27 @@ export class RemoteMemoryBuffer implements ArrayBuffer {
         return !(start < 0 || this.byteLength < end);
     }
 
-    getWithCanonicalIndex(start: number, end: number): ArrayBuffer | undefined {
+    sliceWithCanonicalIndex(start: number, end: number): ArrayBuffer | undefined {
         if (!this._validRange(start, end)) {
             return undefined;
         }
         return this.slice(start, end);
     }
 
-    subscriptGetter(index: number, BYTES_PER_ELEMENT: number): number | undefined {
-        if (index < 0 || this.byteLength <= index * BYTES_PER_ELEMENT) {
-            return undefined
-        }
-        this.rpc.textRequest({
-            type: "LoadMemory",
-            offset: this.offset + index * BYTES_PER_ELEMENT,
-            length: BYTES_PER_ELEMENT
-        }, true)
-        const result = this.rpc.blockingTextResponse("LoadMemoryResult");
-        return NumberFromLittleEndian(result.bytes);
-    }
-
-    subscriptSetter(index: number, BYTES_PER_ELEMENT: number, value: number): boolean {
-        if (index < 0 || this.byteLength <= index) {
-            return true;
-        }
+    set(offset: number, bytes: number[]): void {
         this.rpc.textRequest({
             type: "StoreMemory",
-            offset: this.offset + index * BYTES_PER_ELEMENT,
-            bytes: LittleEndianFromNumber(value, BYTES_PER_ELEMENT),
+            offset: this.offset + offset,
+            bytes: bytes,
         }, true)
         this.rpc.blockingTextResponse("StoreMemoryResult");
+    }
+
+    setWithCanonicalIndex(offset: number, bytes: number[]): boolean {
+        if (!this._validRange(offset, offset + bytes.length)) {
+            return false;
+        }
+        this.set(offset, bytes)
         return true;
     }
 }
@@ -123,12 +114,25 @@ export function wrapDataView(constructor: DataViewConstructor) {
             buffer: RemoteMemoryBuffer,
             length: number, getter: (view: DataView, byteOffset: number) => number
         ) => {
-                const bytes = buffer.getWithCanonicalIndex(byteOffset, byteOffset + length);
-                if (!bytes) {
-                    throw new RangeError("Offset is outside the bounds of the DataView")
-                }
-                const view = new constructor(bytes);
-                return getter(view, byteOffset)
+            const bytes = buffer.sliceWithCanonicalIndex(byteOffset, byteOffset + length);
+            if (!bytes) {
+                throw new RangeError("Offset is outside the bounds of the DataView")
+            }
+            const view = new constructor(bytes);
+            return getter(view, byteOffset)
+        }
+        const fixedNumberSetter = (
+            byteOffset: number,
+            buffer: RemoteMemoryBuffer,
+            length: number, setter: (view: DataView) => void
+        ) => {
+            const tmp = new Uint8Array(length);
+            const view = new constructor(tmp.buffer)
+            setter(view)
+            const bytes = Array.from(tmp);
+            if (!buffer.setWithCanonicalIndex(byteOffset, bytes)) {
+                throw new RangeError("Offset is outside the bounds of the DataView")
+            }
         }
         return {
             remoteBuffer,
@@ -172,6 +176,47 @@ export function wrapDataView(constructor: DataViewConstructor) {
                     return v.getUint32(o, littleEndian);
                 })
             },
+            setFloat32(byteOffset: number, value: number, littleEndian?: boolean): void {
+                return fixedNumberSetter(byteOffset, this.remoteBuffer, 4, (v) => {
+                    v.setFloat32(0, value, littleEndian);
+                })
+            },
+            setFloat64(byteOffset: number, value: number, littleEndian?: boolean) {
+                return fixedNumberSetter(byteOffset, this.remoteBuffer, 8, (v) => {
+                    return v.setFloat64(0, value, littleEndian);
+                })
+            },
+            setInt8(byteOffset: number, value: number) {
+                return fixedNumberSetter(byteOffset, this.remoteBuffer, 1, (v) => {
+                    return v.setInt8(0, value);
+                })
+            },
+            setInt16(byteOffset: number, value: number, littleEndian?: boolean) {
+                return fixedNumberSetter(byteOffset, this.remoteBuffer, 2, (v) => {
+                    return v.setInt16(0, value, littleEndian);
+                })
+            },
+            setInt32(byteOffset: number, value: number, littleEndian?: boolean) {
+                return fixedNumberSetter(byteOffset, this.remoteBuffer, 4, (v) => {
+                    return v.setInt32(0, value, littleEndian);
+                })
+            },
+            setUint8(byteOffset: number, value: number) {
+                return fixedNumberSetter(byteOffset, this.remoteBuffer, 1, (v) => {
+                    return v.setUint8(0, value);
+                })
+            },
+            setUint16(byteOffset: number, value: number, littleEndian?: boolean) {
+                return fixedNumberSetter(byteOffset, this.remoteBuffer, 2, (v) => {
+                    return v.setUint16(0, value, littleEndian);
+                })
+            },
+            setUint32(byteOffset: number, value: number, littleEndian?: boolean) {
+                return fixedNumberSetter(byteOffset, this.remoteBuffer, 4, (v) => {
+                    return v.setUint32(0, value, littleEndian);
+                })
+            },
+
         }
     }
     const constructorHandler: ProxyHandler<DataViewConstructor> = {
@@ -208,7 +253,7 @@ export function wrapTypedArray<
             if (!isNaN(propAsNumber)) {
                 const start = propAsNumber * constructor.BYTES_PER_ELEMENT;
                 const end = start + constructor.BYTES_PER_ELEMENT;
-                const bytes = target.remoteBuffer.getWithCanonicalIndex(start, end)
+                const bytes = target.remoteBuffer.sliceWithCanonicalIndex(start, end)
                 if (!bytes) {
                     return undefined;
                 }
@@ -245,7 +290,9 @@ export function wrapTypedArray<
             }
             const propAsNumber = Number(prop);
             if (!isNaN(propAsNumber)) {
-                return target.remoteBuffer.subscriptSetter(propAsNumber, constructor.BYTES_PER_ELEMENT, value);
+                const bytes = LittleEndianFromNumber(value, constructor.BYTES_PER_ELEMENT)
+                target.remoteBuffer.setWithCanonicalIndex(propAsNumber * constructor.BYTES_PER_ELEMENT, bytes);
+                return true;
             }
             return Reflect.set(target, prop, value, receiver);
         },

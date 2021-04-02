@@ -297,8 +297,79 @@ describe("DataView", () => {
             originalBuffer[0] = value;
 
             expect(props.targetMethod(target, 0, true)).toBe(props.targetMethod(original, 0, true))
-            expect(() => { props.targetMethod(target, -1, true) }).toThrow()
-            expect(() => { props.targetMethod(original, -1, true) }).toThrow()
         });
+        expect(() => { props.targetMethod(target, -1, true) }).toThrow()
+        expect(() => { props.targetMethod(original, -1, true) }).toThrow()
+    })
+
+
+    test.each([
+        {
+            targetMethod: (view: DataView, offset: any, value: number, endian: any) => {
+                view.setFloat32(offset, value, endian)
+            }, values: [0.25, Number.MAX_SAFE_INTEGER, NaN],
+            reader: Float32Array,
+        },
+        {
+            targetMethod: (view: DataView, offset: any, value: number, endian: any) => {
+                return view.setFloat64(offset, value, endian)
+            }, values: [0.25, Number.MAX_SAFE_INTEGER, NaN],
+            reader: Float64Array,
+        },
+        {
+            targetMethod: (view: DataView, offset: any, value: number, endian: any) => {
+                return view.setInt8(offset, value)
+            }, values: [1, -1, 0xFF, 0xFFFF],
+            reader: Int8Array,
+        },
+        {
+            targetMethod: (view: DataView, offset: any, value: number, endian: any) => {
+                return view.setInt16(offset, value, endian)
+            }, values: [1, -1, 0xFF, 0xFFFF, -0xFF],
+            reader: Int16Array,
+        },
+        {
+            targetMethod: (view: DataView, offset: any, value: number, endian: any) => {
+                return view.setInt32(offset, value, endian)
+            }, values: [1, -1, 0xFF, 0xFFFF, -0xFF, 0xFFFFFF, -0xFFFFFF],
+            reader: Int32Array,
+        },
+        {
+            targetMethod: (view: DataView, offset: any, value: number, endian: any) => {
+                return view.setUint8(offset, value)
+            }, values: [1, -1, 0xFF, 0xFFFF],
+            reader: Int32Array,
+        },
+        {
+            targetMethod: (view: DataView, offset: any, value: number, endian: any) => {
+                return view.setUint16(offset, value, endian)
+            }, values: [1, -1, 0xFF, 0xFFFF, -0xFF],
+            reader: Int32Array,
+        },
+        {
+            targetMethod: (view: DataView, offset: any, value: number, endian: any) => {
+                return view.setUint32(offset, value, endian)
+            }, values: [1, -1, 0xFF, 0xFFFF, -0xFF, 0xFFFFFF, -0xFFFFFF],
+            reader: Int32Array,
+        },
+    ])("%s", (props) => {
+        const byteLength = 16;
+        const WrappedView = wrapDataView(DataView);
+        const client = new MockRpcClient();
+        client.memory = Uint8Array.from(Array(byteLength).fill(0));
+        const buffer = new RemoteMemoryBuffer("dummy", 0, byteLength, client);
+        const target = new WrappedView(buffer);
+        const targetBuffer = new props.reader(client.memory.buffer);
+
+        const originalBuffer = new props.reader(byteLength);
+        const original = new DataView(originalBuffer.buffer);
+
+        props.values.forEach(value => {
+            props.targetMethod(target, 0, value, true)
+            props.targetMethod(original, 0, value, true)
+            expect(targetBuffer[0]).toBe(originalBuffer[0])
+        });
+        expect(() => { props.targetMethod(target, -1, 0, true) }).toThrow()
+        expect(() => { props.targetMethod(original, -1, 0, true) }).toThrow()
     })
 })
