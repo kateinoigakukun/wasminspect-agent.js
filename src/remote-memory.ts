@@ -71,6 +71,10 @@ export class RemoteMemoryBuffer implements ArrayBuffer {
         return bytes.buffer;
     }
 
+    _validRange(start: number, end: number): boolean {
+        return !(start < 0 || this.byteLength < end);
+    }
+
     subscriptGetter(index: number, BYTES_PER_ELEMENT: number): number | undefined {
         if (index < 0 || this.byteLength <= index * BYTES_PER_ELEMENT) {
             return undefined
@@ -105,6 +109,39 @@ function _optionMap<T, U>(v: T | undefined, transform: (v: T) => U): U | undefin
     return undefined;
 }
 
+export function wrapDataView(constructor: DataViewConstructor) {
+    const constructWrapper = (remoteBuffer: RemoteMemoryBuffer) => {
+        return {
+            remoteBuffer,
+            getFloat32(byteOffset: number, littleEndian?: boolean): number {
+                const bytes = this.remoteBuffer.slice(byteOffset, byteOffset + 8);
+                const view = new constructor(bytes);
+                return view.getFloat32(0, littleEndian);
+            },
+            getFloat64(byteOffset: number, littleEndian?: boolean): number {
+                const bytes = this.remoteBuffer.slice(byteOffset, byteOffset + 8);
+                const view = new constructor(bytes);
+                return view.getFloat64(0, littleEndian);
+            },
+            getInt8(byteOffset: number): number {
+                const bytes = this.remoteBuffer.slice(byteOffset, byteOffset + 8);
+                const view = new constructor(bytes);
+                return view.getInt8(0);
+            }
+        }
+    }
+    const constructorHandler: ProxyHandler<DataViewConstructor> = {
+        construct(target, args) {
+            if (args[0] instanceof RemoteMemoryBuffer) {
+                return constructWrapper(args[0]);
+            }
+            const newThis = Reflect.construct(target, args);
+            return newThis;
+        },
+    }
+    return new Proxy(constructor, constructorHandler);
+}
+
 export function wrapTypedArray<
     Constructor extends
     Uint8ArrayConstructor |
@@ -125,7 +162,14 @@ export function wrapTypedArray<
             }
             const propAsNumber = Number(prop);
             if (!isNaN(propAsNumber)) {
-                return target.remoteBuffer.subscriptGetter(propAsNumber, constructor.BYTES_PER_ELEMENT);
+                const start = propAsNumber * constructor.BYTES_PER_ELEMENT;
+                const end = start + constructor.BYTES_PER_ELEMENT;
+                if (!target.remoteBuffer._validRange(start, end)) {
+                    return undefined;
+                }
+                const bytes = target.remoteBuffer.slice(start, end);
+                const view = new constructor(bytes);
+                return view[0];
             }
             switch (prop) {
                 case "length":

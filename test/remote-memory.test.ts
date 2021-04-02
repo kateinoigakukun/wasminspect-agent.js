@@ -1,4 +1,4 @@
-import { RemoteMemoryBuffer, wrapTypedArray } from "../dist/remote-memory"
+import { RemoteMemoryBuffer, wrapTypedArray, wrapDataView } from "../dist/remote-memory"
 import { TextRequest, TextResponse } from "../src/socket-rpc";
 import { RpcClient, _TextResponseKind, _SelectTextResponse } from "../src/rpc-client";
 
@@ -45,7 +45,7 @@ class MockRpcClient implements RpcClient {
     }
 }
 
-describe("remote-memory", () => {
+describe("TypedArray", () => {
     const constructors = [Uint8Array, Uint16Array, Uint32Array]
     test.each(constructors)("%p.length", (constructor) => {
         const byteLength = 16;
@@ -108,8 +108,8 @@ describe("remote-memory", () => {
         original[0] = 1;
         expect(client.memory[0]).toBe(originalBuffer[0]);
 
-        target[byteLength/constructor.BYTES_PER_ELEMENT] = 1;
-        original[byteLength/constructor.BYTES_PER_ELEMENT] = 1;
+        target[byteLength / constructor.BYTES_PER_ELEMENT] = 1;
+        original[byteLength / constructor.BYTES_PER_ELEMENT] = 1;
         expect(target[byteLength]).toBe(undefined);
 
         target[-1] = 1;
@@ -132,8 +132,8 @@ describe("remote-memory", () => {
         expect(client.memory[1]).toBe(0xFF);
         expect(target[0]).toBe(0xFF00);
         target[byteLength] = 1;
-        expect(client.memory[byteLength/2]).toBe(0x00);
-        expect(client.memory[byteLength/2]).toBe(0x00);
+        expect(client.memory[byteLength / 2]).toBe(0x00);
+        expect(client.memory[byteLength / 2]).toBe(0x00);
     })
 
     test.each(constructors)("%p.slice", (constructor) => {
@@ -229,5 +229,46 @@ describe("remote-memory", () => {
         expect(targetSub4[0]).toEqual(originalSlice3[0]);
         expect(targetSub4.length).toBe(originalSlice3.length)
         expect(targetSub4[targetSub4.length - 1]).toEqual(originalSlice3[originalSlice3.length - 1]);
+    })
+})
+
+describe("DataView", () => {
+    test.each([
+        {
+            targetMethod: (view: DataView, offset: any, endian: any) => {
+                return view.getFloat32(offset, endian)
+            }, values: [0.25, Number.MAX_SAFE_INTEGER, NaN],
+            writer: Float32Array,
+        },
+        {
+            targetMethod: (view: DataView, offset: any, endian: any) => {
+                return view.getFloat64(offset, endian)
+            }, values: [0.25, Number.MAX_SAFE_INTEGER, NaN],
+            writer: Float64Array,
+        },
+        {
+            targetMethod: (view: DataView, offset: any, endian: any) => {
+                return view.getInt8(offset)
+            }, values: [1, -1, 0xFF, 0xFFFF],
+            writer: Int8Array,
+        },
+    ])("%s", (props) => {
+        const byteLength = 16;
+        const WrappedView = wrapDataView(DataView);
+        const client = new MockRpcClient();
+        client.memory = Uint8Array.from(Array(byteLength).fill(0));
+        const buffer = new RemoteMemoryBuffer("dummy", 0, byteLength, client);
+        const target = new WrappedView(buffer);
+        const originalBuffer = new props.writer(byteLength);
+        const original = new DataView(originalBuffer.buffer);
+
+        props.values.forEach(value => {
+            (new props.writer(client.memory.buffer))[0] = value;
+            originalBuffer[0] = value;
+
+            expect(props.targetMethod(target, 0, true)).toBe(props.targetMethod(original, 0, true))
+            expect(() => { props.targetMethod(target, -1, true) }).toThrow()
+            expect(() => { props.targetMethod(original, -1, true) }).toThrow()
+        });
     })
 })
