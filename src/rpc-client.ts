@@ -3,8 +3,8 @@ import { WorkerClient } from "./worker-client";
 import { SocketResponse, WorkerRequest } from "./worker-rpc";
 
 
-type _TextResponseKind = TextResponse["type"]
-type _SelectTextResponse<T extends _TextResponseKind> = Extract<TextResponse, { type: T }>;
+export type _TextResponseKind = TextResponse["type"]
+export type _SelectTextResponse<T extends _TextResponseKind> = Extract<TextResponse, { type: T }>;
 function _castTextResponse<T extends _TextResponseKind>(response: SocketResponse, type: T): _SelectTextResponse<T> {
     if (response.type == "TextResponse") {
         const body = JSON.parse(response.body) as TextResponse;
@@ -18,7 +18,15 @@ function _castTextResponse<T extends _TextResponseKind>(response: SocketResponse
     }
 }
 
-export class RpcClient {
+export interface RpcClient {
+    textRequest(body: TextRequest, isBlocking: boolean): void;
+    binaryRequest(body: Uint8Array, isBlocking: boolean): void;
+
+    textResponse<T extends _TextResponseKind>(type: T): Promise<_SelectTextResponse<T>>;
+    blockingTextResponse<T extends _TextResponseKind>(type: T): _SelectTextResponse<T>;
+}
+
+export class RpcClientImpl implements RpcClient {
     private workerClient: WorkerClient;
     constructor(worker: WorkerClient) {
         this.workerClient = worker;
@@ -54,11 +62,11 @@ export class RpcClient {
         return _castTextResponse(this.blockingReceive(), type);
     }
 
-    async receive(): Promise<SocketResponse> {
+    private async receive(): Promise<SocketResponse> {
         return (await this.workerClient.receive("SocketResponse")).inner;
     }
 
-    blockingReceive(): SocketResponse {
+    private blockingReceive(): SocketResponse {
         return this.workerClient.blockingReceive("SocketResponse").inner;
     }
 }

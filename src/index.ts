@@ -4,7 +4,8 @@ import { WorkerClient } from "./worker-client";
 import { Config, defaultConfig } from "./config";
 import { RemoteMemoryBuffer } from "./remote-memory";
 import createSocketWorker from "./worker-constructor"
-import { RpcClient } from "./rpc-client";
+import { RpcClient, RpcClientImpl } from "./rpc-client";
+import { wrapTypedArray } from "./remote-memory"
 
 export namespace WasmInspect {
 
@@ -18,6 +19,11 @@ export namespace WasmInspect {
         grow(delta: number): number {
             return 0;
         }
+    }
+
+    export function init() {
+        Uint8Array = wrapTypedArray(Uint8Array);
+        Uint16Array = wrapTypedArray(Uint16Array);
     }
 
     function _createExportObject(e: WasmExport, module: Module): WebAssembly.ExportValue | undefined {
@@ -71,7 +77,7 @@ export namespace WasmInspect {
             uint8Buffer = new Uint8Array(bytes.buffer);
         }
         const worker = new WorkerClient(configuration, createSocketWorker);
-        const rpc = new RpcClient(worker);
+        const rpc = new RpcClientImpl(worker);
         await worker.postRequest({
             type: "Configure",
             inner: configuration,

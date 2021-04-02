@@ -22,6 +22,14 @@ export type TextRequest = {
 } | {
     type: "CallResult",
     values: number[],
+} | {
+    type: "LoadMemory",
+    offset: number,
+    length: number,
+} | {
+    type: "StoreMemory",
+    offset: number,
+    bytes: number[],
 }
 
 export type InitResponse = {
@@ -35,4 +43,9 @@ export type TextResponse = {
 } | {
     type: "CallResult",
     values: WasmValue[]
+} | {
+    type: "LoadMemoryResult",
+    bytes: number[],
+} | {
+    type: "StoreMemoryResult",
 } | InitResponse;

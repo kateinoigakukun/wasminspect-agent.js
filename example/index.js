@@ -18,5 +18,6 @@ const { WasmInspect } = require("wasminspect-web");
         0x80, 0x80, 0x80, 0x00, 0x10, 0x84, 0x80, 0x80, 0x80, 0x00, 0x0b
     ]);
     WasmInspect.configuration.debugEnabled = true;
+    WasmInspect.init();
     const module = await WasmInspect.compile(bytes);
 })()
