@@ -25,9 +25,10 @@ export namespace WasmInspect {
     }
   }
 
-  export function init() {
-    Uint8Array = wrapTypedArray(Uint8Array);
-    Uint16Array = wrapTypedArray(Uint16Array);
+  export function init(globalContext: any) {
+    globalContext.Uint8Array = wrapTypedArray(Uint8Array);
+    globalContext.Uint16Array = wrapTypedArray(Uint16Array);
+    globalContext.WebAssemby = WasmInspect;
   }
 
   function _createExportObject(
@@ -105,6 +106,16 @@ export namespace WasmInspect {
     return new Module(init, rpc);
   }
 
-  // export function instantiate(bytes: BufferSource, importObject?: WebAssembly.Imports): Promise<WebAssembly.WebAssemblyInstantiatedSource> {
-  // }
+  export async function instantiate(
+    moduleObjectOrBytes: WasmInspect.Module | BufferSource,
+    importObject?: WebAssembly.Imports
+  ): Promise<any> {
+    if (moduleObjectOrBytes instanceof WasmInspect.Module) {
+      return Promise.resolve(new Instance(moduleObjectOrBytes, importObject));
+    } else {
+      const module = await compile(moduleObjectOrBytes);
+      const instance = new Instance(module, importObject);
+      return Promise.resolve({ module, instance });
+    }
+  }
 }
