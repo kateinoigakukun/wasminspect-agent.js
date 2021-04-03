@@ -24,7 +24,6 @@ if (WASMINSPECT_SERVER_PATH) {
 
     WasmInspect.init(global);
 
-    // prettier-ignore
     const createBytes = (fixture: string) => {
       const file = path.join(__dirname, "fixtures", fixture);
       const buffer = fs.readFileSync(file);
@@ -43,6 +42,16 @@ if (WASMINSPECT_SERVER_PATH) {
       const props = await WebAssembly.instantiate(createBytes("nop.wasm"));
       const instance = props.instance;
       expect(Object.keys(instance.exports)).toEqual(["start"]);
+      (instance.exports.start as any)()
+      await WasmInspect.destroy(props.module as any);
+    });
+
+    test("remote call", async () => {
+      const props = await WebAssembly.instantiate(createBytes("remote-call.wasm"));
+      const instance = props.instance;
+      expect(Object.keys(instance.exports)).toEqual(["ret_42", "with_arg"]);
+      expect((instance.exports.ret_42 as any)()).toBe(42)
+      expect((instance.exports.with_arg as any)(24)).toBe(24)
       await WasmInspect.destroy(props.module as any);
     });
 

@@ -56,7 +56,10 @@ export namespace WasmInspect {
             true
           );
           const result = module.rpc.blockingTextResponse("CallResult");
-          return result.values[0];
+          if (result.values.length == 0) {
+            return undefined;
+          }
+          return result.values[0].value;
         };
       }
       case "Global":
