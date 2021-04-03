@@ -88,7 +88,7 @@ export namespace WasmInspect {
           const importedModule = instance.importObjects[body.module];
           const imported = importedModule[body.field];
           if (imported instanceof Function) {
-            let resultValue = imported(_translate_args(body.args));
+            let resultValue = imported(..._translate_args(body.args));
             module.rpc.textRequest(
               {
                 type: "CallResult",
