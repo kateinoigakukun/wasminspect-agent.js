@@ -6,7 +6,7 @@ import {
 } from "./socket-rpc";
 import { WorkerClient } from "./worker-client";
 import { Config, defaultConfig } from "./config";
-import { RemoteMemoryBuffer } from "./remote-memory";
+import { RemoteMemoryBuffer, wrapDataView } from "./remote-memory";
 import createSocketWorker from "./worker-constructor";
 import { RpcClient, RpcClientImpl } from "./rpc-client";
 import { wrapTypedArray } from "./remote-memory";
@@ -35,6 +35,7 @@ export namespace WasmInspect {
     globalContext.Int32Array = wrapTypedArray(Int32Array);
     globalContext.Float32Array = wrapTypedArray(Float32Array);
     globalContext.Float64Array = wrapTypedArray(Float64Array);
+    globalContext.DataView = wrapDataView(DataView)
     globalContext.WebAssembly = WasmInspect;
   }
   export async function destroy(module: WebAssembly.Module) {
