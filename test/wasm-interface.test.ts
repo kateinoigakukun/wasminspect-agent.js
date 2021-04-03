@@ -69,11 +69,34 @@ if (WASMINSPECT_SERVER_PATH || WASMINSPECT_SERVER_ADDR) {
       );
       const instance = props.instance;
       expect(Object.keys(instance.exports)).toContain("memory");
+      const exports = instance.exports as {
+        memory: WebAssembly.Memory,
+        internal_store_i32: (addr: number, val: number) => void
+        internal_read_i32: (addr: number) => number
+        internal_store_f32: (addr: number, val: number) => void
+        internal_read_f32: (addr: number) => number
+      };
 
-      const memory = instance.exports.memory as WebAssembly.Memory;
+      const memory = exports.memory;
       expect(memory.buffer.byteLength).toBe(PAGE_SIZE);
-      const u8Array = new Uint8Array(memory.buffer).slice(0, 10);
-      expect(Array.from(u8Array)).toEqual(Array(10).fill(0));
+
+      const u8Buffer = new Uint8Array(memory.buffer)
+      const u8Slice = u8Buffer.slice(0, 10);
+      expect(Array.from(u8Slice)).toEqual(Array(10).fill(0));
+
+      u8Buffer[0] = 0xFF;
+      expect(exports.internal_read_i32(0)).toBe(0xFF);
+
+      exports.internal_store_i32(1, 0xF0);
+      expect(u8Buffer[1]).toBe(0xF0);
+
+      const f32Buffer = new Float32Array(memory.buffer);
+      f32Buffer[0] = 0.25;
+      expect(exports.internal_read_f32(0)).toBe(0.25);
+
+      exports.internal_store_f32(0, 0.75);
+      expect(f32Buffer[0]).toBe(0.75);
+
       await WasmInspect.destroy(props.module);
     });
   });

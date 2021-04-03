@@ -27,6 +27,8 @@ export namespace WasmInspect {
     globalContext.Int8Array = wrapTypedArray(Int8Array);
     globalContext.Int16Array = wrapTypedArray(Int16Array);
     globalContext.Int32Array = wrapTypedArray(Int32Array);
+    globalContext.Float32Array = wrapTypedArray(Float32Array);
+    globalContext.Float64Array = wrapTypedArray(Float64Array);
     globalContext.WebAssembly = WasmInspect;
   }
   export async function destroy(module: WebAssembly.Module) {

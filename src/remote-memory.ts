@@ -269,6 +269,8 @@ export function wrapTypedArray<
     | Int8ArrayConstructor
     | Int16ArrayConstructor
     | Int32ArrayConstructor
+    | Float32ArrayConstructor
+    | Float64ArrayConstructor
 >(constructor: Constructor) {
   const constructProxy = (remoteBuffer: RemoteMemoryBuffer) => {
     const proxy = new Proxy({ remoteBuffer }, instanceHandler);
@@ -320,13 +322,12 @@ export function wrapTypedArray<
       }
       const propAsNumber = Number(prop);
       if (!isNaN(propAsNumber)) {
-        const bytes = LittleEndianFromNumber(
-          value,
-          constructor.BYTES_PER_ELEMENT
-        );
+        const tmp = new Uint8Array(constructor.BYTES_PER_ELEMENT);
+        const view = new constructor(tmp.buffer);
+        view[0] = value;
         target.remoteBuffer.setWithCanonicalIndex(
           propAsNumber * constructor.BYTES_PER_ELEMENT,
-          bytes
+          Array.from(tmp)
         );
         return true;
       }

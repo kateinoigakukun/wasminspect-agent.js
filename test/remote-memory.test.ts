@@ -62,7 +62,16 @@ class MockRpcClient implements RpcClient {
 }
 
 describe("TypedArray", () => {
-  const constructors = [Uint8Array, Uint16Array, Uint32Array];
+  const constructors = [
+    Uint8Array,
+    Uint16Array,
+    Uint32Array,
+    Int8Array,
+    Int16Array,
+    Int32Array,
+    Float32Array,
+    Float64Array,
+  ];
   test.each(constructors)("%p.length", (constructor) => {
     const byteLength = 16;
     const WrappedArray = wrapTypedArray(constructor);
