@@ -31,11 +31,13 @@ export type TextRequest =
     }
   | {
       type: "LoadMemory";
+      name: string,
       offset: number;
       length: number;
     }
   | {
       type: "StoreMemory";
+      name: string,
       offset: number;
       bytes: number[];
     };

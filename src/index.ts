@@ -23,6 +23,10 @@ export namespace WasmInspect {
   export function init(globalContext: any) {
     globalContext.Uint8Array = wrapTypedArray(Uint8Array);
     globalContext.Uint16Array = wrapTypedArray(Uint16Array);
+    globalContext.Uint32Array = wrapTypedArray(Uint32Array);
+    globalContext.Int8Array = wrapTypedArray(Int8Array);
+    globalContext.Int16Array = wrapTypedArray(Int16Array);
+    globalContext.Int32Array = wrapTypedArray(Int32Array);
     globalContext.WebAssembly = WasmInspect;
   }
   export async function destroy(module: WebAssembly.Module) {

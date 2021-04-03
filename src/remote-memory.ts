@@ -75,6 +75,7 @@ export class RemoteMemoryBuffer implements ArrayBuffer {
     this.rpc.textRequest(
       {
         type: "LoadMemory",
+        name: this.name,
         offset: this.offset + range.begin,
         length: range.end - range.begin,
       },
@@ -100,6 +101,7 @@ export class RemoteMemoryBuffer implements ArrayBuffer {
     this.rpc.textRequest(
       {
         type: "StoreMemory",
+        name: this.name,
         offset: this.offset + offset,
         bytes: bytes,
       },

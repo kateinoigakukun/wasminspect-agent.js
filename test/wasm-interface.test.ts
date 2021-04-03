@@ -1,26 +1,31 @@
 import { WasmInspect } from "../dist";
 import { spawn, ChildProcess } from "child_process";
 import * as path from "path";
-import * as fs from "fs"
+import * as fs from "fs";
 
 const WASMINSPECT_SERVER_PATH = process.env.WASMINSPECT_SERVER_PATH;
-if (WASMINSPECT_SERVER_PATH) {
+const WASMINSPECT_SERVER_ADDR = process.env.WASMINSPECT_SERVER_ADDR;
+if (WASMINSPECT_SERVER_PATH || WASMINSPECT_SERVER_ADDR) {
   describe("WebAssembly Interface", () => {
     let serverProcess: ChildProcess | null = null;
-    beforeEach(() => {
-      serverProcess = spawn(WASMINSPECT_SERVER_PATH, {
-        env: {
-          WASMINSPECT_SERVER_NO_INTERACTIVE: "1",
-        },
+    if (WASMINSPECT_SERVER_ADDR) {
+      WasmInspect.configuration.socketAddr = WASMINSPECT_SERVER_ADDR;
+    } else if (WASMINSPECT_SERVER_PATH) {
+      beforeEach(() => {
+        serverProcess = spawn(WASMINSPECT_SERVER_PATH, {
+          env: {
+            WASMINSPECT_SERVER_NO_INTERACTIVE: "1",
+          },
+        });
+        serverProcess.stdout!.on("data", (data) => {
+          console.log(data.toString());
+        });
       });
-      serverProcess.stdout!.on("data", (data) => {
-        console.log(data.toString());
-      });
-    });
 
-    afterEach(() => {
-      serverProcess!.kill();
-    });
+      afterEach(() => {
+        serverProcess!.kill();
+      });
+    }
 
     WasmInspect.init(global);
 
@@ -35,27 +40,45 @@ if (WASMINSPECT_SERVER_PATH) {
 
     test("compile", async () => {
       const module = await WebAssembly.compile(createBytes("nop.wasm"));
-      await WasmInspect.destroy(module as any);
+      await WasmInspect.destroy(module);
     });
 
     test("instantiate with exports", async () => {
       const props = await WebAssembly.instantiate(createBytes("nop.wasm"));
       const instance = props.instance;
       expect(Object.keys(instance.exports)).toEqual(["start"]);
-      (instance.exports.start as any)()
-      await WasmInspect.destroy(props.module as any);
+      (instance.exports.start as any)();
+      await WasmInspect.destroy(props.module);
     });
 
     test("remote call", async () => {
-      const props = await WebAssembly.instantiate(createBytes("remote-call.wasm"));
+      const props = await WebAssembly.instantiate(
+        createBytes("remote-call.wasm")
+      );
       const instance = props.instance;
       expect(Object.keys(instance.exports)).toEqual(["ret_42", "with_arg"]);
-      expect((instance.exports.ret_42 as any)()).toBe(42)
-      expect((instance.exports.with_arg as any)(24)).toBe(24)
-      await WasmInspect.destroy(props.module as any);
+      expect((instance.exports.ret_42 as any)()).toBe(42);
+      expect((instance.exports.with_arg as any)(24)).toBe(24);
+      await WasmInspect.destroy(props.module);
     });
 
+    test("memory operation", async () => {
+      const PAGE_SIZE = 0x010000;
+      const props = await WebAssembly.instantiate(
+        createBytes("memory-op.wasm")
+      );
+      const instance = props.instance;
+      expect(Object.keys(instance.exports)).toContain("memory");
+
+      (instance.exports.start as any)();
+
+      const memory = instance.exports.memory as WebAssembly.Memory;
+      expect(memory.buffer.byteLength).toBe(PAGE_SIZE);
+      const u8Array = new Uint8Array(memory.buffer).slice(0, 10);
+      expect(Array.from(u8Array)).toEqual(Array(10).fill(0));
+      await WasmInspect.destroy(props.module);
+    });
   });
 } else {
-  test.skip("No WASMINSPECT_SERVER_PATH", () => {});
+  test.skip("No WASMINSPECT_SERVER_PATH and WASMINSPECT_SERVER_ADDR", () => {});
 }
