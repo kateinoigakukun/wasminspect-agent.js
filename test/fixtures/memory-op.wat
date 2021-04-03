@@ -1,6 +1,5 @@
 (module
     (memory (export "memory") 1)
-    (func (export "start"))
     (func (export "internal_store_i32") (param $addr i32) (param $val i32)
         local.get $addr
         local.get $val

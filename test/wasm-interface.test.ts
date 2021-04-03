@@ -70,8 +70,6 @@ if (WASMINSPECT_SERVER_PATH || WASMINSPECT_SERVER_ADDR) {
       const instance = props.instance;
       expect(Object.keys(instance.exports)).toContain("memory");
 
-      (instance.exports.start as any)();
-
       const memory = instance.exports.memory as WebAssembly.Memory;
       expect(memory.buffer.byteLength).toBe(PAGE_SIZE);
       const u8Array = new Uint8Array(memory.buffer).slice(0, 10);
