@@ -69,8 +69,6 @@ describe("TypedArray", () => {
     Int8Array,
     Int16Array,
     Int32Array,
-    Float32Array,
-    Float64Array,
   ];
   test.each(constructors)("%p.length", (constructor) => {
     const byteLength = 16;
@@ -262,6 +260,33 @@ describe("TypedArray", () => {
     );
   });
 });
+
+describe("FloatingView", () => {
+  const constructors = [
+    Float32Array,
+    Float64Array,
+  ];
+
+  test.each(constructors)("%p subscript get number", (constructor) => {
+    const byteLength = 16;
+    const WrappedArray = wrapTypedArray(constructor);
+    const client = new MockRpcClient();
+    const buffer = new RemoteMemoryBuffer("dummy", 0, byteLength, client);
+    const target = new WrappedArray(buffer);
+    const originalBuffer = new Uint8Array(byteLength);
+    const original = new constructor(originalBuffer.buffer);
+    client.memory = Uint8Array.from(Array(byteLength).fill(0));
+
+    expect(target[0]).toBe(original[0]);
+    target[0] = 1;
+    original[0] = 1;
+    expect(target[0]).toBe(original[0]);
+    expect(target[byteLength/constructor.BYTES_PER_ELEMENT]).toBe(undefined);
+
+    expect(target[-1]).toBe(original[-1]);
+  });
+
+})
 
 describe("DataView", () => {
   test.each([
