@@ -92,10 +92,26 @@ export const acceptWorkerRequest = (
   socketFactory: (addr: string) => Socket
 ) => {
   if (state.debugEnabled) {
-    console.log(
-      "[wasminspect-web] [main thread] -> [worker thread] ",
-      JSON.stringify(workerRequest)
-    );
+    if (
+      workerRequest.type !== "SocketRequest" ||
+      workerRequest.inner.type !== "BinaryRequest"
+    ) {
+      console.log(
+        "[wasminspect-web] [main thread] -> [worker thread] ",
+        JSON.stringify(workerRequest)
+      );
+    } else {
+      console.log(
+        "[wasminspect-web] [main thread] -> [worker thread] ",
+        JSON.stringify({
+          type: workerRequest.type,
+          inner: {
+            type: workerRequest.inner.type,
+            body: "[[bytes]]",
+          },
+        })
+      );
+    }
   }
   const oldIsBlocking = state.isBlocking;
   state.isBlocking = workerRequest.isBlocking;
