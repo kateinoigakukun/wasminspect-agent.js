@@ -17,7 +17,9 @@ function _castTextResponse<T extends _TextResponseKind>(
       return body as _SelectTextResponse<T>;
     } else {
       throw new Error(
-        `[wasminspect-web] Unexpected response: ${JSON.stringify(response)}. expected: ${type}`
+        `[wasminspect-web] Unexpected response: ${JSON.stringify(
+          response
+        )}. expected: ${type}`
       );
     }
   } else {

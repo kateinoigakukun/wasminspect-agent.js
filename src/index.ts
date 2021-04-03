@@ -68,7 +68,7 @@ export namespace WasmInspect {
       true
     );
     while (true) {
-      let result = module.rpc.blockingReceive();
+      const result = module.rpc.blockingReceive();
       if (result.type !== "TextResponse") {
         throw new Error(
           `[wasminspect-web] Unexpected response while calling exported function: ${result}`

@@ -267,10 +267,7 @@ describe("TypedArray", () => {
 });
 
 describe("FloatingView", () => {
-  const constructors = [
-    Float32Array,
-    Float64Array,
-  ];
+  const constructors = [Float32Array, Float64Array];
 
   test.each(constructors)("%p subscript get number", (constructor) => {
     const byteLength = 16;
@@ -286,12 +283,11 @@ describe("FloatingView", () => {
     target[0] = 1;
     original[0] = 1;
     expect(target[0]).toBe(original[0]);
-    expect(target[byteLength/constructor.BYTES_PER_ELEMENT]).toBe(undefined);
+    expect(target[byteLength / constructor.BYTES_PER_ELEMENT]).toBe(undefined);
 
     expect(target[-1]).toBe(original[-1]);
   });
-
-})
+});
 
 describe("DataView", () => {
   test.each([

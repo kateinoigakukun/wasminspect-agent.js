@@ -31,13 +31,13 @@ export type TextRequest =
     }
   | {
       type: "LoadMemory";
-      name: string,
+      name: string;
       offset: number;
       length: number;
     }
   | {
       type: "StoreMemory";
-      name: string,
+      name: string;
       offset: number;
       bytes: number[];
     };
@@ -57,10 +57,10 @@ export type TextResponse =
       values: WasmValue[];
     }
   | {
-      type: "CallHost",
-      module: string,
-      field: string,
-      args: WasmValue[],
+      type: "CallHost";
+      module: string;
+      field: string;
+      args: WasmValue[];
     }
   | {
       type: "LoadMemoryResult";

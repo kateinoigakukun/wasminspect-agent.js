@@ -112,14 +112,14 @@ export const acceptWorkerRequest = (
       };
       socket.onclose = (event: any) => {
         if (state.isBlocking) {
-          state.waitingPrologue.push({ type: "Terminated" })
+          state.waitingPrologue.push({ type: "Terminated" });
         } else {
           ctx.postMessage({ type: "Terminated" } as WorkerResponse);
         }
       };
       (socket as any).onerror = (event: any) => {
         if (state.isBlocking) {
-          state.waitingPrologue.push({ type: "Terminated" })
+          state.waitingPrologue.push({ type: "Terminated" });
         } else {
           ctx.postMessage({ type: "Terminated" } as WorkerResponse);
         }
