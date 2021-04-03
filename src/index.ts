@@ -23,9 +23,13 @@ export namespace WasmInspect {
   export function init(globalContext: any) {
     globalContext.Uint8Array = wrapTypedArray(Uint8Array);
     globalContext.Uint16Array = wrapTypedArray(Uint16Array);
-    globalContext.WebAssemby = WasmInspect;
+    globalContext.WebAssembly = WasmInspect;
   }
-  export async function destroy(module: Module) {
+  export async function destroy(module: WebAssembly.Module) {
+    if (!(module instanceof Module)) {
+      console.log("[wasminspect-web] Destorying non-WasmInspect version module");
+      return;
+    }
     module.worker.postRequest({ type: "Terminate" });
     await module.worker.receive("Terminated");
     await module.worker.terminate();
@@ -69,10 +73,12 @@ export namespace WasmInspect {
     exports: WebAssembly.Exports;
     constructor(module: Module, importObjects?: WebAssembly.Imports) {
       this.exports = {};
-      for (const e of module.init.exports) {
-        let exportVal = _createExportObject(e, module);
-        if (exportVal) {
-          this.exports[e.name] = exportVal;
+      if (module.init.exports) {
+        for (const e of module.init.exports) {
+          let exportVal = _createExportObject(e, module);
+          if (exportVal) {
+            this.exports[e.name] = exportVal;
+          }
         }
       }
     }
