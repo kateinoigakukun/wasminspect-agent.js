@@ -39,11 +39,10 @@ if (WASMINSPECT_SERVER_PATH) {
       await WasmInspect.destroy(module as any);
     });
 
-    test.skip("instantiate with bytes", async () => {
+    test("instantiate with exports", async () => {
       const props = await WebAssembly.instantiate(createBytes("nop.wasm"));
       const instance = props.instance;
-      console.log(instance.exports)
-      expect(instance.exports.start).not.toBe(undefined);
+      expect(Object.keys(instance.exports)).toEqual(["start"]);
       await WasmInspect.destroy(props.module as any);
     });
 
