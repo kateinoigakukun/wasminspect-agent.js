@@ -37,6 +37,7 @@ export interface RpcClient {
   blockingTextResponse<T extends _TextResponseKind>(
     type: T
   ): _SelectTextResponse<T>;
+  blockingReceive(): SocketResponse;
 }
 
 export class RpcClientImpl implements RpcClient {
@@ -83,7 +84,7 @@ export class RpcClientImpl implements RpcClient {
     return (await this.workerClient.receive("SocketResponse")).inner;
   }
 
-  private blockingReceive(): SocketResponse {
+  blockingReceive(): SocketResponse {
     return this.workerClient.blockingReceive("SocketResponse").inner;
   }
 }

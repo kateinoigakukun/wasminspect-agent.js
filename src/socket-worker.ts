@@ -111,7 +111,18 @@ export const acceptWorkerRequest = (
         acceptSocketEvent(event.data, state, ctx);
       };
       socket.onclose = (event: any) => {
-        ctx.postMessage({ type: "Terminated" } as WorkerResponse);
+        if (state.isBlocking) {
+          state.waitingPrologue.push({ type: "Terminated" })
+        } else {
+          ctx.postMessage({ type: "Terminated" } as WorkerResponse);
+        }
+      };
+      (socket as any).onerror = (event: any) => {
+        if (state.isBlocking) {
+          state.waitingPrologue.push({ type: "Terminated" })
+        } else {
+          ctx.postMessage({ type: "Terminated" } as WorkerResponse);
+        }
       };
       state.debugEnabled = workerRequest.inner.debugEnabled;
       ctx.postMessage({ type: "SetConfiguration" } as WorkerResponse);

@@ -1,4 +1,9 @@
-import { InitResponse, WasmExport } from "./socket-rpc";
+import {
+  InitResponse,
+  TextResponse,
+  WasmExport,
+  WasmValue,
+} from "./socket-rpc";
 import { WorkerClient } from "./worker-client";
 import { Config, defaultConfig } from "./config";
 import { RemoteMemoryBuffer } from "./remote-memory";
@@ -6,6 +11,7 @@ import createSocketWorker from "./worker-constructor";
 import { RpcClient, RpcClientImpl } from "./rpc-client";
 import { wrapTypedArray } from "./remote-memory";
 import { WorkerHandle } from "./worker";
+import { SocketResponse } from "./worker-rpc";
 
 export namespace WasmInspect {
   export let configuration: Config = defaultConfig();
@@ -33,7 +39,9 @@ export namespace WasmInspect {
   }
   export async function destroy(module: WebAssembly.Module) {
     if (!(module instanceof Module)) {
-      console.log("[wasminspect-web] Destorying non-WasmInspect version module");
+      console.log(
+        "[wasminspect-web] Destorying non-WasmInspect version module"
+      );
       return;
     }
     module.worker.postRequest({ type: "Terminate" });
@@ -41,9 +49,72 @@ export namespace WasmInspect {
     await module.worker.terminate();
   }
 
+  function _translate_args(args: WasmValue[]): number[] {
+    let values: number[] = [];
+    for (const arg of args) {
+      values.push(arg.value);
+    }
+    return values;
+  }
+
+  function _invokeExportedFunction(
+    e: WasmExport,
+    module: Module,
+    instance: Instance,
+    args: any[]
+  ): any {
+    module.rpc.textRequest(
+      { type: "CallExported", name: e.name, args: args },
+      true
+    );
+    while (true) {
+      let result = module.rpc.blockingReceive();
+      if (result.type !== "TextResponse") {
+        throw new Error(
+          `[wasminspect-web] Unexpected response while calling exported function: ${result}`
+        );
+      }
+      const body = JSON.parse(result.body) as TextResponse;
+
+      switch (body.type) {
+        case "CallResult": {
+          if (body.values.length == 0) {
+            return undefined;
+          }
+          return body.values[0].value;
+        }
+        case "CallHost": {
+          const importedModule = instance.importObjects[body.module];
+          const imported = importedModule[body.field];
+          if (imported instanceof Function) {
+            let resultValue = imported(_translate_args(body.args));
+            module.rpc.textRequest(
+              {
+                type: "CallResult",
+                values: [resultValue],
+              },
+              true
+            );
+          } else {
+            throw new Error(
+              `[wasminspect-web] No function imported: ${body.module}.${body.field}`
+            );
+          }
+          break;
+        }
+        default: {
+          throw new Error(
+            `[wasminspect-web] Unexpected response while calling exported function: ${result.body}`
+          );
+        }
+      }
+    }
+  }
+
   function _createExportObject(
     e: WasmExport,
-    module: Module
+    module: Module,
+    instance: Instance
   ): WebAssembly.ExportValue | undefined {
     switch (e.type) {
       case "Memory": {
@@ -57,15 +128,7 @@ export namespace WasmInspect {
       }
       case "Function": {
         return (...args: any[]) => {
-          module.rpc.textRequest(
-            { type: "CallExported", name: e.name, args: args },
-            true
-          );
-          const result = module.rpc.blockingTextResponse("CallResult");
-          if (result.values.length == 0) {
-            return undefined;
-          }
-          return result.values[0].value;
+          return _invokeExportedFunction(e, module, instance, args);
         };
       }
       case "Global":
@@ -80,11 +143,14 @@ export namespace WasmInspect {
 
   export class Instance implements WebAssembly.Instance {
     exports: WebAssembly.Exports;
+    importObjects: WebAssembly.Imports;
+
     constructor(module: Module, importObjects?: WebAssembly.Imports) {
+      this.importObjects = importObjects || {};
       this.exports = {};
       if (module.init.exports) {
         for (const e of module.init.exports) {
-          let exportVal = _createExportObject(e, module);
+          let exportVal = _createExportObject(e, module, this);
           if (exportVal) {
             this.exports[e.name] = exportVal;
           }

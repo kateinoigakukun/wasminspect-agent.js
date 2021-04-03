@@ -9,6 +9,7 @@ import {
   _TextResponseKind,
   _SelectTextResponse,
 } from "../src/rpc-client";
+import { SocketResponse } from "../dist/worker-rpc";
 
 class MockRpcClient implements RpcClient {
   private lastRequest: TextRequest | undefined;
@@ -54,6 +55,10 @@ class MockRpcClient implements RpcClient {
         throw new Error("unimplemented");
       }
     }
+  }
+
+  blockingReceive(): SocketResponse {
+    throw new Error("unimplemented");
   }
 
   terminate(): Promise<void> {

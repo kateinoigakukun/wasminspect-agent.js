@@ -62,6 +62,31 @@ if (WASMINSPECT_SERVER_PATH || WASMINSPECT_SERVER_ADDR) {
       await WasmInspect.destroy(props.module);
     });
 
+    test("host call", async () => {
+      const props = await WebAssembly.instantiate(
+        createBytes("host-call.wasm"),
+        {
+          host_env: {
+            js_ret_42: () => {
+              return 42;
+            },
+            js_with_arg: (v: number) => {
+              return v * 2;
+            },
+          },
+        }
+      );
+      const instance = props.instance;
+      const exports = instance.exports as {
+        memory: WebAssembly.Memory;
+        call_js_ret_42: () => number;
+        call_js_with_arg: (v: number) => number;
+      };
+      expect(exports.call_js_ret_42()).toBe(42);
+      expect(exports.call_js_with_arg(24)).toBe(48);
+      await WasmInspect.destroy(props.module);
+    });
+
     test("memory operation", async () => {
       const PAGE_SIZE = 0x010000;
       const props = await WebAssembly.instantiate(
@@ -70,25 +95,25 @@ if (WASMINSPECT_SERVER_PATH || WASMINSPECT_SERVER_ADDR) {
       const instance = props.instance;
       expect(Object.keys(instance.exports)).toContain("memory");
       const exports = instance.exports as {
-        memory: WebAssembly.Memory,
-        internal_store_i32: (addr: number, val: number) => void
-        internal_read_i32: (addr: number) => number
-        internal_store_f32: (addr: number, val: number) => void
-        internal_read_f32: (addr: number) => number
+        memory: WebAssembly.Memory;
+        internal_store_i32: (addr: number, val: number) => void;
+        internal_read_i32: (addr: number) => number;
+        internal_store_f32: (addr: number, val: number) => void;
+        internal_read_f32: (addr: number) => number;
       };
 
       const memory = exports.memory;
       expect(memory.buffer.byteLength).toBe(PAGE_SIZE);
 
-      const u8Buffer = new Uint8Array(memory.buffer)
+      const u8Buffer = new Uint8Array(memory.buffer);
       const u8Slice = u8Buffer.slice(0, 10);
       expect(Array.from(u8Slice)).toEqual(Array(10).fill(0));
 
-      u8Buffer[0] = 0xFF;
-      expect(exports.internal_read_i32(0)).toBe(0xFF);
+      u8Buffer[0] = 0xff;
+      expect(exports.internal_read_i32(0)).toBe(0xff);
 
-      exports.internal_store_i32(1, 0xF0);
-      expect(u8Buffer[1]).toBe(0xF0);
+      exports.internal_store_i32(1, 0xf0);
+      expect(u8Buffer[1]).toBe(0xf0);
 
       const f32Buffer = new Float32Array(memory.buffer);
       f32Buffer[0] = 0.25;

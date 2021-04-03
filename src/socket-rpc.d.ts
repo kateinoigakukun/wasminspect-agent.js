@@ -57,6 +57,12 @@ export type TextResponse =
       values: WasmValue[];
     }
   | {
+      type: "CallHost",
+      module: string,
+      field: string,
+      args: WasmValue[],
+    }
+  | {
       type: "LoadMemoryResult";
       bytes: number[];
     }
