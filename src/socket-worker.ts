@@ -75,10 +75,10 @@ export const acceptSocketEvent = async (
       );
     }
     let bodyBuffer;
-    if (Buffer !== undefined && eventData instanceof Buffer) {
+    if (typeof Buffer === "function" && eventData instanceof Buffer) {
       bodyBuffer = eventData;
-    } else if (Blob !== undefined && eventData instanceof Blob) {
-      console.log(eventData)
+    } else if (typeof Blob === "function" && eventData instanceof Blob) {
+      // @ts-ignore
       bodyBuffer = await eventData.arrayBuffer();
     } else {
       throw new Error(`[wasminspect-web] Unexpected event type: ${eventData}`);
