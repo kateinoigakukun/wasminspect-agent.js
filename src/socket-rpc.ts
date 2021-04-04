@@ -21,6 +21,9 @@ export type TextRequest =
       type: "Version";
     }
   | {
+      type: "InitMemory";
+    }
+  | {
       type: "CallExported";
       name: string;
       args: number[];
@@ -75,6 +78,6 @@ export enum BinaryResponseKind {
   InitMemory = 0,
 }
 export type BinaryResponse = {
-  type: BinaryResponseKind,
-  bytes: Uint8Array
-}
+  type: BinaryResponseKind;
+  bytes: Uint8Array;
+};

@@ -1,11 +1,5 @@
-import { TextResponse } from "./socket-rpc";
 import { WorkerPort } from "./worker";
-import {
-  SocketRequest,
-  SocketResponse,
-  WorkerRequest,
-  WorkerResponse,
-} from "./worker-rpc";
+import { SocketRequest, WorkerRequest, WorkerResponse } from "./worker-rpc";
 
 export class BlockingQueue<T> {
   private pendings: T[];
@@ -57,8 +51,8 @@ export interface Socket {
   close(): void;
 }
 
-export const acceptSocketEvent = (
-  eventData: string | ArrayBuffer,
+export const acceptSocketEvent = async (
+  eventData: string | Blob | Buffer,
   state: State,
   ctx: WorkerPort
 ) => {
@@ -80,9 +74,18 @@ export const acceptSocketEvent = (
         "[wasminspect-web] [main thread] <- [worker thread] <- [socket]  [[bytes]]"
       );
     }
+    let bodyBuffer;
+    if (Buffer !== undefined && eventData instanceof Buffer) {
+      bodyBuffer = eventData;
+    } else if (Blob !== undefined && eventData instanceof Blob) {
+      console.log(eventData)
+      bodyBuffer = await eventData.arrayBuffer();
+    } else {
+      throw new Error(`[wasminspect-web] Unexpected event type: ${eventData}`);
+    }
     response = {
       type: "SocketResponse",
-      inner: { type: "BinaryResponse", body: new Uint8Array(eventData) },
+      inner: { type: "BinaryResponse", body: new Uint8Array(bodyBuffer) },
     } as WorkerResponse;
   }
 
@@ -138,8 +141,8 @@ export const acceptWorkerRequest = (
       socket.onopen = () => {
         ctx.postMessage({ type: "OnSocketOpen" } as WorkerResponse);
       };
-      socket.onmessage = (event: any) => {
-        acceptSocketEvent(event.data, state, ctx);
+      socket.onmessage = async (event: any) => {
+        await acceptSocketEvent(event.data, state, ctx);
       };
       socket.onclose = (event: any) => {
         if (state.isBlocking) {
