@@ -6,12 +6,12 @@ import {
 } from "./socket-rpc";
 import { WorkerClient } from "./worker-client";
 import { Config, defaultConfig } from "./config";
-import { RemoteMemoryBuffer, wrapDataView } from "./remote-memory";
+import { wrapDataView } from "./remote-objects/remote-dataview";
 import createSocketWorker from "./worker-constructor";
 import { RpcClient, RpcClientImpl } from "./rpc-client";
-import { wrapTypedArray } from "./remote-memory";
 import { WorkerHandle } from "./worker";
-import { SocketResponse } from "./worker-rpc";
+import { RemoteMemoryBuffer } from "./remote-objects/remote-memory-buffer";
+import { wrapTypedArray } from "./remote-objects/remote-typedarray";
 
 export namespace WasmInspect {
   export let configuration: Config = defaultConfig();
