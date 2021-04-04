@@ -12,6 +12,7 @@ import { RpcClient, RpcClientImpl } from "./rpc-client";
 import { WorkerHandle } from "./worker";
 import { RemoteMemoryBuffer } from "./remote-objects/remote-memory-buffer";
 import { wrapTypedArray } from "./remote-objects/remote-typedarray";
+import { wrapTextDecoder } from "./remote-objects/remote-textdecoder";
 
 export namespace WasmInspect {
   export let configuration: Config = defaultConfig();
@@ -35,7 +36,8 @@ export namespace WasmInspect {
     globalContext.Int32Array = wrapTypedArray(Int32Array);
     globalContext.Float32Array = wrapTypedArray(Float32Array);
     globalContext.Float64Array = wrapTypedArray(Float64Array);
-    globalContext.DataView = wrapDataView(DataView)
+    globalContext.DataView = wrapDataView(DataView);
+    globalContext.TextDecoder = wrapTextDecoder(TextDecoder);
     globalContext.WebAssembly = WasmInspect;
   }
   export async function destroy(module: WebAssembly.Module) {
@@ -88,11 +90,11 @@ export namespace WasmInspect {
           const importedModule = instance.importObjects[body.module];
           const imported = importedModule[body.field];
           if (imported instanceof Function) {
-            let resultValue = imported(..._translate_args(body.args));
+            const resultValue = imported(..._translate_args(body.args));
             module.rpc.textRequest(
               {
                 type: "CallResult",
-                values: [resultValue],
+                values: resultValue === undefined ? [] : [resultValue],
               },
               true
             );
