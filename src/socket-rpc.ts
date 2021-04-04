@@ -70,3 +70,11 @@ export type TextResponse =
       type: "StoreMemoryResult";
     }
   | InitResponse;
+
+export enum BinaryResponseKind {
+  InitMemory = 0,
+}
+export type BinaryResponse = {
+  type: BinaryResponseKind,
+  bytes: Uint8Array
+}

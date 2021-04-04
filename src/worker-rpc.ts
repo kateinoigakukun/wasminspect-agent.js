@@ -18,7 +18,7 @@ export type WorkerRequest =
     }
   | {
       type: "BlockingEpilogue";
-      jsonBuffer: SharedArrayBuffer;
+      bodyBuffer: SharedArrayBuffer;
     };
 
 export type SocketRequest =
@@ -34,6 +34,9 @@ export type SocketRequest =
 export type SocketResponse = {
   type: "TextResponse";
   body: string;
+} | {
+  type: "BinaryResponse",
+  body: Uint8Array,
 };
 
 export type WorkerResponse =

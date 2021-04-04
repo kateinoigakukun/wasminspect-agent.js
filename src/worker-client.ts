@@ -30,7 +30,7 @@ export class WorkerClient {
       if (configuration.debugEnabled) {
         console.log(
           "[wasminspect-web] [main thread] <- [worker thread] ",
-          JSON.stringify(response)
+          response
         );
       }
       if (this.onmessage) {
@@ -104,11 +104,13 @@ export class WorkerClient {
   }
 
   private _blockingReceive(): WorkerResponse {
-    const prologue: () => number = () => {
-      // the last byte is reserved for notification flag.
-      const sizeBuffer = new SharedArrayBuffer(5);
-      const intView = new Uint32Array(sizeBuffer, 0, 1);
-      const flagView = new Uint8Array(sizeBuffer, 4, 1);
+    const prologue: () => [number, number] = () => {
+      // [0..<4] = json **string** size (not bytes length)
+      // [4..<8] = extra bytes array length
+      // [8]     = notification flag
+      const sizeBuffer = new SharedArrayBuffer(4 + 4 + 1);
+      const intView = new Uint32Array(sizeBuffer, 0, 2);
+      const flagView = new Uint8Array(sizeBuffer, 8, 1);
       this.postRequest({ type: "BlockingPrologue", sizeBuffer }, true);
 
       const start = new Date().getTime();
@@ -120,15 +122,22 @@ export class WorkerClient {
           throw new Error("[wasminspect-web] Timeout BlockingPrologue");
         }
       }
-      return intView[0];
+      return [intView[0], intView[1]];
     };
 
-    const epilogue: (length: number) => string = (length) => {
+    const epilogue: (
+      jsonLen: number,
+      bytesLen: number
+    ) => [string, Uint8Array] = (jsonLen, bytesLen) => {
       // the last byte is reserved for notification flag.
-      const jsonBuffer = new SharedArrayBuffer(length * 2 + 1);
-      const stringView = new Uint16Array(jsonBuffer, 0, length);
-      const flagView = new Uint8Array(jsonBuffer, length * 2, 1);
-      this.postRequest({ type: "BlockingEpilogue", jsonBuffer }, true);
+      const bodyBuffer = new SharedArrayBuffer(jsonLen * 2 + bytesLen + 1);
+      const stringView = new Uint16Array(bodyBuffer, 0, jsonLen);
+      const byteView = new Uint8Array(bodyBuffer, jsonLen * 2, bytesLen);
+      const flagView = new Uint8Array(bodyBuffer, jsonLen * 2 + bytesLen, 1);
+      this.postRequest(
+        { type: "BlockingEpilogue", bodyBuffer: bodyBuffer },
+        true
+      );
 
       const start = new Date().getTime();
       let now = new Date().getTime();
@@ -139,18 +148,18 @@ export class WorkerClient {
           throw new Error("[wasminspect-web] Timeout BlockingEpilogue");
         }
       }
-      return String.fromCharCode(...stringView);
+      return [String.fromCharCode(...stringView), byteView];
     };
 
-    const length = prologue();
-    if (this.configuration.debugEnabled) {
-      console.log("[wasminspect-web] BlockingPrologue: length = ", length);
-    }
-    const jsonString = epilogue(length);
-    if (this.configuration.debugEnabled) {
-      console.log("[wasminspect-web] BlockingEpilogue: json = ", jsonString);
-    }
+    const [jsonLen, bytesLen] = prologue();
+    const [jsonString, bytes] = epilogue(jsonLen, bytesLen);
     const response = JSON.parse(jsonString);
+    if (
+      response.type === "SocketResponse" &&
+      response.inner.type === "BinaryResponse"
+    ) {
+      response.inner.body = bytes;
+    }
     return response;
   }
 }

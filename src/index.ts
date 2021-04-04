@@ -1,4 +1,5 @@
 import {
+  BinaryResponseKind,
   InitResponse,
   TextResponse,
   WasmExport,
@@ -192,6 +193,7 @@ export namespace WasmInspect {
     await worker.receive("SetConfiguration");
     await worker.receive("OnSocketOpen");
     rpc.binaryRequest(uint8Buffer);
+    const initMemory = await rpc.binaryResponse(BinaryResponseKind.InitMemory);
     const init = await rpc.textResponse("Init");
     return new Module(init, rpc, worker);
   }

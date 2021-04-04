@@ -46,7 +46,7 @@ export type State = {
   isBlocking: boolean;
   socket: Socket | null;
   waitingPrologue: BlockingQueue<WorkerResponse>;
-  waitingEpilogue: BlockingQueue<string>;
+  waitingEpilogue: BlockingQueue<{ json: string; bytes: Uint8Array | null }>;
 };
 
 export interface Socket {
@@ -62,26 +62,41 @@ export const acceptSocketEvent = (
   state: State,
   ctx: WorkerPort
 ) => {
-  if (state.debugEnabled) {
-    console.log(
-      "[wasminspect-web] [main thread] <- [worker thread] <- [socket] ",
-      eventData
-    );
-  }
   let response: WorkerResponse;
   if (typeof eventData === "string") {
+    if (state.debugEnabled) {
+      console.log(
+        "[wasminspect-web] [main thread] <- [worker thread] <- [socket] ",
+        eventData
+      );
+    }
     response = {
       type: "SocketResponse",
       inner: { type: "TextResponse", body: eventData },
     } as WorkerResponse;
   } else {
-    throw new Error("BinaryResponse is not supported yet");
+    if (state.debugEnabled) {
+      console.log(
+        "[wasminspect-web] [main thread] <- [worker thread] <- [socket]  [[bytes]]"
+      );
+    }
+    response = {
+      type: "SocketResponse",
+      inner: { type: "BinaryResponse", body: new Uint8Array(eventData) },
+    } as WorkerResponse;
   }
 
   if (state.isBlocking) {
     state.waitingPrologue.push(response);
   } else {
-    ctx.postMessage(response);
+    if (
+      response.type === "SocketResponse" &&
+      response.inner.type === "BinaryResponse"
+    ) {
+      ctx.postMessage(response, [response.inner.body.buffer]);
+    } else {
+      ctx.postMessage(response);
+    }
   }
 };
 
@@ -156,12 +171,28 @@ export const acceptWorkerRequest = (
         );
       }
       state.waitingPrologue.consume((msg) => {
-        const intView = new Uint32Array(workerRequest.sizeBuffer, 0, 1);
-        const flagView = new Uint8Array(workerRequest.sizeBuffer, 4, 1);
-        const json = JSON.stringify(msg);
+        // [0..<4] = json **string** size (not bytes length)
+        // [4..<8] = extra bytes array length
+        // [8]     = notification flag
+        const intView = new Uint32Array(workerRequest.sizeBuffer, 0, 2);
+        const flagView = new Uint8Array(workerRequest.sizeBuffer, 8, 1);
+        let jsonObject;
+        let extraBytes = null;
+        if (
+          msg.type === "SocketResponse" &&
+          msg.inner.type === "BinaryResponse"
+        ) {
+          extraBytes = msg.inner.body;
+          msg.inner.body = new Uint8Array();
+          jsonObject = { type: "SocketResponse", inner: msg.inner };
+        } else {
+          jsonObject = msg;
+        }
+        const json = JSON.stringify(jsonObject);
         Atomics.store(intView, 0, json.length);
+        Atomics.store(intView, 1, extraBytes?.length || 0);
         Atomics.store(flagView, 0, 1);
-        state.waitingEpilogue.push(json);
+        state.waitingEpilogue.push({ json, bytes: extraBytes });
       });
       break;
     }
@@ -171,19 +202,32 @@ export const acceptWorkerRequest = (
           "BlockingEpilogue should be called after blocking request"
         );
       }
-      state.waitingEpilogue.consume((json) => {
+      state.waitingEpilogue.consume((props) => {
+        const json = props.json;
+        const bytes = props.bytes;
         const stringView = new Uint16Array(
-          workerRequest.jsonBuffer,
+          workerRequest.bodyBuffer,
           0,
           json.length
         );
-        const flagView = new Uint8Array(
-          workerRequest.jsonBuffer,
+        const extraBytesLen = bytes?.length || 0;
+        const byteView = new Uint8Array(
+          workerRequest.bodyBuffer,
           json.length * 2,
+          extraBytesLen
+        );
+        const flagView = new Uint8Array(
+          workerRequest.bodyBuffer,
+          json.length * 2 + extraBytesLen,
           1
         );
         for (let idx = 0; idx < json.length; idx++) {
           Atomics.store(stringView, idx, json.charCodeAt(idx));
+        }
+        if (bytes) {
+          for (let idx = 0; idx < bytes.length; idx++) {
+            Atomics.store(byteView, idx, bytes[idx]);
+          }
         }
         Atomics.store(flagView, 0, 1);
       });

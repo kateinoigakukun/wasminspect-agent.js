@@ -1,4 +1,4 @@
-import { TextRequest, TextResponse } from "./socket-rpc";
+import { BinaryResponse, BinaryResponseKind, TextRequest, TextResponse } from "./socket-rpc";
 import { WorkerClient } from "./worker-client";
 import { SocketResponse, WorkerRequest } from "./worker-rpc";
 
@@ -20,6 +20,26 @@ function _castTextResponse<T extends _TextResponseKind>(
         `[wasminspect-web] Unexpected response: ${JSON.stringify(
           response
         )}. expected: ${type}`
+      );
+    }
+  } else {
+    throw new Error(
+      `[wasminspect-web] Unexpected response: ${response}. expected: TextResponse`
+    );
+  }
+}
+
+function _castBinaryResponse(
+  response: SocketResponse,
+  type: BinaryResponseKind
+): Uint8Array {
+  if (response.type == "BinaryResponse") {
+    const kind = response.body[0] as BinaryResponseKind;
+    if (kind == type) {
+      return response.body.subarray(1);
+    } else {
+      throw new Error(
+        `[wasminspect-web] Unexpected response: ${response}. expected: ${type}`
       );
     }
   } else {
@@ -76,10 +96,18 @@ export class RpcClientImpl implements RpcClient {
     return _castTextResponse(await this.receive(), type);
   }
 
+  async binaryResponse(type: BinaryResponseKind): Promise<Uint8Array> {
+    return _castBinaryResponse(await this.receive(), type);
+  }
+
   blockingTextResponse<T extends _TextResponseKind>(
     type: T
   ): _SelectTextResponse<T> {
     return _castTextResponse(this.blockingReceive(), type);
+  }
+
+  blockingBinaryResponse(type: BinaryResponseKind): Uint8Array {
+    return _castBinaryResponse(this.blockingReceive(), type);
   }
 
   private async receive(): Promise<SocketResponse> {
