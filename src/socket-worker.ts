@@ -146,6 +146,7 @@ export const acceptWorkerRequest = (
     }
     case "Terminate": {
       state.socket?.close();
+      ctx.postMessage({ type: "Terminated" } as WorkerResponse);
       break;
     }
     case "BlockingPrologue": {
