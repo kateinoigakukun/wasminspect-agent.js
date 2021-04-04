@@ -331,23 +331,23 @@ describe("DataView", () => {
         return view.getUint8(offset);
       },
       values: [1, -1, 0xff, 0xffff],
-      writer: Int32Array,
+      writer: Uint8Array,
     },
     {
       targetMethod: (view: DataView, offset: any, endian: any) => {
         return view.getUint16(offset, endian);
       },
       values: [1, -1, 0xff, 0xffff, -0xff],
-      writer: Int32Array,
+      writer: Uint16Array,
     },
     {
       targetMethod: (view: DataView, offset: any, endian: any) => {
         return view.getUint32(offset, endian);
       },
       values: [1, -1, 0xff, 0xffff, -0xff, 0xffffff, -0xffffff],
-      writer: Int32Array,
+      writer: Uint32Array,
     },
-  ])("%s", (props) => {
+  ])("Getter %s", (props) => {
     const byteLength = 16;
     const WrappedView = wrapDataView(DataView);
     const client = new MockRpcClient();
@@ -444,7 +444,7 @@ describe("DataView", () => {
         return view.setUint8(offset, value);
       },
       values: [1, -1, 0xff, 0xffff],
-      reader: Int32Array,
+      reader: Uint8Array,
     },
     {
       targetMethod: (
@@ -456,7 +456,7 @@ describe("DataView", () => {
         return view.setUint16(offset, value, endian);
       },
       values: [1, -1, 0xff, 0xffff, -0xff],
-      reader: Int32Array,
+      reader: Uint16Array,
     },
     {
       targetMethod: (
@@ -468,9 +468,9 @@ describe("DataView", () => {
         return view.setUint32(offset, value, endian);
       },
       values: [1, -1, 0xff, 0xffff, -0xff, 0xffffff, -0xffffff],
-      reader: Int32Array,
+      reader: Uint32Array,
     },
-  ])("%s", (props) => {
+  ])("Setter %s", (props) => {
     const byteLength = 16;
     const WrappedView = wrapDataView(DataView);
     const client = new MockRpcClient();
@@ -479,13 +479,22 @@ describe("DataView", () => {
     const target = new WrappedView(buffer);
     const targetBuffer = new props.reader(client.memory.buffer);
 
-    const originalBuffer = new props.reader(byteLength);
+    const originalBuffer = new props.reader(byteLength/props.reader.BYTES_PER_ELEMENT);
     const original = new DataView(originalBuffer.buffer);
 
     props.values.forEach((value) => {
       props.targetMethod(target, 0, value, true);
       props.targetMethod(original, 0, value, true);
       expect(targetBuffer[0]).toBe(originalBuffer[0]);
+
+      props.targetMethod(target, 1, value, true);
+      props.targetMethod(original, 1, value, true);
+      expect(targetBuffer[1]).toBe(originalBuffer[1]);
+
+      const tail = (byteLength/props.reader.BYTES_PER_ELEMENT) - 1;
+      props.targetMethod(target, tail, value, true);
+      props.targetMethod(original, tail, value, true);
+      expect(targetBuffer[tail]).toBe(originalBuffer[tail]);
     });
     expect(() => {
       props.targetMethod(target, -1, 0, true);
