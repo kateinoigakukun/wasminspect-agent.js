@@ -28,7 +28,7 @@ export function wrapDataView(constructor: DataViewConstructor) {
       byteOffset: number,
       buffer: RemoteMemoryBuffer,
       length: number,
-      getter: (view: DataView, byteOffset: number) => number
+      getter: (view: DataView) => number
     ) => {
       const bytes = buffer.sliceWithCanonicalIndex(
         byteOffset,
@@ -38,7 +38,7 @@ export function wrapDataView(constructor: DataViewConstructor) {
         throw new RangeError("Offset is outside the bounds of the DataView");
       }
       const view = new constructor(bytes);
-      return getter(view, byteOffset);
+      return getter(view);
     };
     const fixedNumberSetter = (
       byteOffset: number,
@@ -58,43 +58,43 @@ export function wrapDataView(constructor: DataViewConstructor) {
       remoteBuffer,
       buffer: remoteBuffer,
       getFloat32(byteOffset: number, littleEndian?: boolean): number {
-        return fixedNumberGetter(byteOffset, this.remoteBuffer, 4, (v, o) => {
-          return v.getFloat32(o, littleEndian);
+        return fixedNumberGetter(byteOffset, this.remoteBuffer, 4, (v) => {
+          return v.getFloat32(0, littleEndian);
         });
       },
       getFloat64(byteOffset: number, littleEndian?: boolean): number {
-        return fixedNumberGetter(byteOffset, this.remoteBuffer, 8, (v, o) => {
-          return v.getFloat64(o, littleEndian);
+        return fixedNumberGetter(byteOffset, this.remoteBuffer, 8, (v) => {
+          return v.getFloat64(0, littleEndian);
         });
       },
       getInt8(byteOffset: number): number {
-        return fixedNumberGetter(byteOffset, this.remoteBuffer, 1, (v, o) => {
-          return v.getInt8(o);
+        return fixedNumberGetter(byteOffset, this.remoteBuffer, 1, (v) => {
+          return v.getInt8(0);
         });
       },
       getInt16(byteOffset: number, littleEndian?: boolean): number {
-        return fixedNumberGetter(byteOffset, this.remoteBuffer, 2, (v, o) => {
-          return v.getInt16(o, littleEndian);
+        return fixedNumberGetter(byteOffset, this.remoteBuffer, 2, (v) => {
+          return v.getInt16(0, littleEndian);
         });
       },
       getInt32(byteOffset: number, littleEndian?: boolean): number {
-        return fixedNumberGetter(byteOffset, this.remoteBuffer, 4, (v, o) => {
-          return v.getInt32(o, littleEndian);
+        return fixedNumberGetter(byteOffset, this.remoteBuffer, 4, (v) => {
+          return v.getInt32(0, littleEndian);
         });
       },
       getUint8(byteOffset: number): number {
-        return fixedNumberGetter(byteOffset, this.remoteBuffer, 1, (v, o) => {
-          return v.getUint8(o);
+        return fixedNumberGetter(byteOffset, this.remoteBuffer, 1, (v) => {
+          return v.getUint8(0);
         });
       },
       getUint16(byteOffset: number, littleEndian?: boolean): number {
-        return fixedNumberGetter(byteOffset, this.remoteBuffer, 2, (v, o) => {
-          return v.getUint16(o, littleEndian);
+        return fixedNumberGetter(byteOffset, this.remoteBuffer, 2, (v) => {
+          return v.getUint16(0, littleEndian);
         });
       },
       getUint32(byteOffset: number, littleEndian?: boolean): number {
-        return fixedNumberGetter(byteOffset, this.remoteBuffer, 4, (v, o) => {
-          return v.getUint32(o, littleEndian);
+        return fixedNumberGetter(byteOffset, this.remoteBuffer, 4, (v) => {
+          return v.getUint32(0, littleEndian);
         });
       },
       setFloat32(
