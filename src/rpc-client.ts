@@ -24,7 +24,7 @@ function _castTextResponse<T extends _TextResponseKind>(
     }
   } else {
     throw new Error(
-      `[wasminspect-web] Unexpected response: ${response}. expected: TextResponse`
+      `[wasminspect-web] Unexpected response: ${JSON.stringify(response)}. expected: TextResponse`
     );
   }
 }
@@ -44,7 +44,7 @@ function _castBinaryResponse(
     }
   } else {
     throw new Error(
-      `[wasminspect-web] Unexpected response: ${response}. expected: TextResponse`
+      `[wasminspect-web] Unexpected response: ${JSON.stringify(response)}. expected: BinaryResponse`
     );
   }
 }
