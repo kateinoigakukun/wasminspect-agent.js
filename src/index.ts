@@ -125,7 +125,7 @@ export namespace WasmInspect {
         const buffer = new RemoteMemoryBuffer(
           e.name,
           0,
-          e.memorySize,
+          Infinity,
           module.rpc
         );
         return new Memory(buffer);
