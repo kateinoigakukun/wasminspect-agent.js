@@ -194,8 +194,6 @@ export namespace WasmInspect {
     await worker.receive("OnSocketOpen");
     rpc.binaryRequest(uint8Buffer);
     const init = await rpc.textResponse("Init");
-    rpc.textRequest({ type: "InitMemory" });
-    const initMemory = await rpc.binaryResponse(BinaryResponseKind.InitMemory);
     return new Module(init, rpc, worker);
   }
 
