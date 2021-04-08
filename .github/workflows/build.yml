@@ -10,9 +10,16 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Install dependencies
-        run: npm install
+        run: |
+          cargo install \
+            --git https://github.com/kateinoigakukun/wasminspect.git \
+            --features remote-api \
+            --root ${{ github.workspace }}
+          npm ci
       - name: Build
         run: npm run build
+        env:
+          WASMINSPECT_SERVER_PATH: ${{ github.workspace }}/bin/wasminspect-server
       - name: Test
         run: npm run test
 
