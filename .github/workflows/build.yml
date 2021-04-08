@@ -18,8 +18,8 @@ jobs:
           npm ci
       - name: Build
         run: npm run build
-        env:
-          WASMINSPECT_SERVER_PATH: ${{ github.workspace }}/bin/wasminspect-server
       - name: Test
         run: npm run test
+        env:
+          WASMINSPECT_SERVER_PATH: ${{ github.workspace }}/bin/wasminspect-server
 
