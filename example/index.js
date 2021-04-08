@@ -1,4 +1,4 @@
-const { WasmInspect } = require("wasminspect-web");
+const { WasmInspect } = require("wasminspect-client");
 
 (async () => {
   const response = await fetch("/fib.wasm");

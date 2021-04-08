@@ -7,7 +7,7 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
-    "wasminspect-web": ".."
+    "wasminspect-client": ".."
   },
   "devDependencies": {
     "copy-webpack-plugin": "^8.1.0",
