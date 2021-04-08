@@ -1,5 +1,8 @@
 # wasminspect-agent.js
 
+[![Build and Test](https://github.com/kateinoigakukun/wasminspect-agent.js/actions/workflows/build.yml/badge.svg)](https://github.com/kateinoigakukun/wasminspect-agent.js/actions/workflows/build.yml)
+![npm](https://img.shields.io/npm/v/wasminspect-agent.js)
+
 A debugger agent of [wasminspect](https://github.com/kateinoigakukun/wasminspect) for JavaScript host environment.
 This libray is compatible for both browser and Node.js.
 
