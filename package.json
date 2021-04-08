@@ -2,13 +2,17 @@
   "name": "wasminspect-client",
   "version": "0.1.0",
   "main": "dist/index.js",
+  "files": [
+    "dist", "web-dist"
+  ],
   "scripts": {
     "build": "run-p build:node build:web",
     "build:node": "tsc -b",
     "build:web": "webpack",
     "watch:node": "tsc -w",
     "test": "jest",
-    "fmt": "prettier --write {src,test}/**/*.ts"
+    "fmt": "prettier --write {src,test}/**/*.ts",
+    "prepublishOnly": "npm run build"
   },
   "module": "dist/index.js",
   "browser": "web-dist/web.js",
@@ -27,5 +31,22 @@
     "webpack": "^5.28.0",
     "webpack-cli": "^4.6.0",
     "worker-loader": "^3.0.8"
-  }
+  },
+  "keywords": [
+    "WebAssembly",
+    "wasm"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kateinoigakukun/wasminspect-client.git"
+  },
+  "homepage": "https://github.com/kateinoigakukun/wasminspect-client",
+  "bugs": {
+    "url": "https://github.com/kateinoigakukun/wasminspect-client/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "author": "Yuta Saito",
+  "license": "MIT"
 }
