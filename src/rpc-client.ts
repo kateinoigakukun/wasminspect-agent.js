@@ -17,14 +17,14 @@ function _castTextResponse<T extends _TextResponseKind>(
       return body as _SelectTextResponse<T>;
     } else {
       throw new Error(
-        `[wasminspect-client] Unexpected response: ${JSON.stringify(
+        `[wasminspect-agent.js] Unexpected response: ${JSON.stringify(
           response
         )}. expected: ${type}`
       );
     }
   } else {
     throw new Error(
-      `[wasminspect-client] Unexpected response: ${JSON.stringify(response)}. expected: TextResponse`
+      `[wasminspect-agent.js] Unexpected response: ${JSON.stringify(response)}. expected: TextResponse`
     );
   }
 }
@@ -39,12 +39,12 @@ function _castBinaryResponse(
       return response.body.subarray(1);
     } else {
       throw new Error(
-        `[wasminspect-client] Unexpected response: ${response}. expected: ${type}`
+        `[wasminspect-agent.js] Unexpected response: ${response}. expected: ${type}`
       );
     }
   } else {
     throw new Error(
-      `[wasminspect-client] Unexpected response: ${JSON.stringify(response)}. expected: BinaryResponse`
+      `[wasminspect-agent.js] Unexpected response: ${JSON.stringify(response)}. expected: BinaryResponse`
     );
   }
 }

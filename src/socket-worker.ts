@@ -60,7 +60,7 @@ export const acceptSocketEvent = async (
   if (typeof eventData === "string") {
     if (state.debugEnabled) {
       console.log(
-        "[wasminspect-client] [main thread] <- [worker thread] <- [socket] ",
+        "[wasminspect-agent.js] [main thread] <- [worker thread] <- [socket] ",
         eventData
       );
     }
@@ -71,7 +71,7 @@ export const acceptSocketEvent = async (
   } else {
     if (state.debugEnabled) {
       console.log(
-        "[wasminspect-client] [main thread] <- [worker thread] <- [socket]  [[bytes]]"
+        "[wasminspect-agent.js] [main thread] <- [worker thread] <- [socket]  [[bytes]]"
       );
     }
     let bodyBuffer;
@@ -81,7 +81,7 @@ export const acceptSocketEvent = async (
       // @ts-ignore
       bodyBuffer = await eventData.arrayBuffer();
     } else {
-      throw new Error(`[wasminspect-client] Unexpected event type: ${eventData}`);
+      throw new Error(`[wasminspect-agent.js] Unexpected event type: ${eventData}`);
     }
     response = {
       type: "SocketResponse",
@@ -115,12 +115,12 @@ export const acceptWorkerRequest = (
       workerRequest.inner.type !== "BinaryRequest"
     ) {
       console.log(
-        "[wasminspect-client] [main thread] -> [worker thread] ",
+        "[wasminspect-agent.js] [main thread] -> [worker thread] ",
         JSON.stringify(workerRequest)
       );
     } else {
       console.log(
-        "[wasminspect-client] [main thread] -> [worker thread] ",
+        "[wasminspect-agent.js] [main thread] -> [worker thread] ",
         JSON.stringify({
           type: workerRequest.type,
           inner: {

@@ -44,7 +44,7 @@ export namespace WasmInspect {
   export async function destroy(module: WebAssembly.Module) {
     if (!(module instanceof Module)) {
       console.log(
-        "[wasminspect-client] Destorying non-WasmInspect version module"
+        "[wasminspect-agent.js] Destorying non-WasmInspect version module"
       );
       return;
     }
@@ -75,7 +75,7 @@ export namespace WasmInspect {
       const result = module.rpc.blockingReceive();
       if (result.type !== "TextResponse") {
         throw new Error(
-          `[wasminspect-client] Unexpected response while calling exported function: ${result}`
+          `[wasminspect-agent.js] Unexpected response while calling exported function: ${result}`
         );
       }
       const body = JSON.parse(result.body) as TextResponse;
@@ -101,14 +101,14 @@ export namespace WasmInspect {
             );
           } else {
             throw new Error(
-              `[wasminspect-client] No function imported: ${body.module}.${body.field}`
+              `[wasminspect-agent.js] No function imported: ${body.module}.${body.field}`
             );
           }
           break;
         }
         default: {
           throw new Error(
-            `[wasminspect-client] Unexpected response while calling exported function: ${result.body}`
+            `[wasminspect-agent.js] Unexpected response while calling exported function: ${result.body}`
           );
         }
       }
@@ -138,7 +138,7 @@ export namespace WasmInspect {
       case "Global":
       case "Table": {
         console.warn(
-          `[wasminspect-client] Exporting ${e.type} is not supported yet`
+          `[wasminspect-agent.js] Exporting ${e.type} is not supported yet`
         );
         break;
       }

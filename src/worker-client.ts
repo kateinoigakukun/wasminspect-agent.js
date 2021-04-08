@@ -29,7 +29,7 @@ export class WorkerClient {
       const response = event.data;
       if (configuration.debugEnabled) {
         console.log(
-          "[wasminspect-client] [main thread] <- [worker thread] ",
+          "[wasminspect-agent.js] [main thread] <- [worker thread] ",
           response
         );
       }
@@ -41,7 +41,7 @@ export class WorkerClient {
     });
     this.worker.addEventListener("error", (event: any) => {
       console.error(
-        "[wasminspect-client] [main thread] Unhandled error event: ",
+        "[wasminspect-agent.js] [main thread] Unhandled error event: ",
         event.data
       );
     });
@@ -58,7 +58,7 @@ export class WorkerClient {
     } else {
       return Promise.reject(
         new Error(
-          `[wasminspect-client] Unexpected response: ${JSON.stringify(
+          `[wasminspect-agent.js] Unexpected response: ${JSON.stringify(
             response
           )}, expected: ${type}`
         )
@@ -71,7 +71,7 @@ export class WorkerClient {
       return response as any;
     } else {
       throw new Error(
-        `[wasminspect-client] Unexpected response: ${response}, expected: ${type}`
+        `[wasminspect-agent.js] Unexpected response: ${response}, expected: ${type}`
       );
     }
   }
@@ -119,7 +119,7 @@ export class WorkerClient {
       while (Atomics.compareExchange(flagView, 0, 1, 0) == 0) {
         now = new Date().getTime();
         if (now - start > this.configuration.blockingTimeout) {
-          throw new Error("[wasminspect-client] Timeout BlockingPrologue");
+          throw new Error("[wasminspect-agent.js] Timeout BlockingPrologue");
         }
       }
       return [intView[0], intView[1]];
@@ -145,7 +145,7 @@ export class WorkerClient {
       while (Atomics.compareExchange(flagView, 0, 1, 0) == 0) {
         now = new Date().getTime();
         if (now - start > this.configuration.blockingTimeout) {
-          throw new Error("[wasminspect-client] Timeout BlockingEpilogue");
+          throw new Error("[wasminspect-agent.js] Timeout BlockingEpilogue");
         }
       }
       return [String.fromCharCode(...stringView), byteView];

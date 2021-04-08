@@ -1,5 +1,5 @@
 {
-  "name": "wasminspect-client",
+  "name": "wasminspect-agent.js",
   "version": "0.1.0",
   "main": "dist/index.js",
   "files": [
@@ -38,11 +38,11 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/kateinoigakukun/wasminspect-client.git"
+    "url": "git+https://github.com/kateinoigakukun/wasminspect-agent.js.git"
   },
-  "homepage": "https://github.com/kateinoigakukun/wasminspect-client",
+  "homepage": "https://github.com/kateinoigakukun/wasminspect-agent.js",
   "bugs": {
-    "url": "https://github.com/kateinoigakukun/wasminspect-client/issues"
+    "url": "https://github.com/kateinoigakukun/wasminspect-agent.js/issues"
   },
   "publishConfig": {
     "access": "public"
