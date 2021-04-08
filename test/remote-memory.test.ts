@@ -1,8 +1,6 @@
-import {
-  RemoteMemoryBuffer,
-  wrapTypedArray,
-  wrapDataView,
-} from "../dist/remote-memory";
+import { wrapDataView } from "../dist/remote-objects/remote-dataview";
+import { RemoteMemoryBuffer } from "../dist/remote-objects/remote-memory-buffer";
+import { wrapTypedArray } from "../dist/remote-objects/remote-typedarray";
 import { TextRequest, TextResponse } from "../src/socket-rpc";
 import {
   RpcClient,
@@ -479,7 +477,9 @@ describe("DataView", () => {
     const target = new WrappedView(buffer);
     const targetBuffer = new props.reader(client.memory.buffer);
 
-    const originalBuffer = new props.reader(byteLength/props.reader.BYTES_PER_ELEMENT);
+    const originalBuffer = new props.reader(
+      byteLength / props.reader.BYTES_PER_ELEMENT
+    );
     const original = new DataView(originalBuffer.buffer);
 
     props.values.forEach((value) => {
@@ -491,7 +491,7 @@ describe("DataView", () => {
       props.targetMethod(original, 1, value, true);
       expect(targetBuffer[1]).toBe(originalBuffer[1]);
 
-      const tail = (byteLength/props.reader.BYTES_PER_ELEMENT) - 1;
+      const tail = byteLength / props.reader.BYTES_PER_ELEMENT - 1;
       props.targetMethod(target, tail, value, true);
       props.targetMethod(original, tail, value, true);
       expect(targetBuffer[tail]).toBe(originalBuffer[tail]);
