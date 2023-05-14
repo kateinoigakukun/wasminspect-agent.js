@@ -122,12 +122,7 @@ export namespace WasmInspect {
   ): WebAssembly.ExportValue | undefined {
     switch (e.type) {
       case "Memory": {
-        const buffer = new RemoteMemoryBuffer(
-          e.name,
-          0,
-          Infinity,
-          module.rpc
-        );
+        const buffer = new RemoteMemoryBuffer(e.name, 0, Infinity, module.rpc);
         return new Memory(buffer);
       }
       case "Function": {

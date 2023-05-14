@@ -81,7 +81,9 @@ export const acceptSocketEvent = async (
       // @ts-ignore
       bodyBuffer = await eventData.arrayBuffer();
     } else {
-      throw new Error(`[wasminspect-agent.js] Unexpected event type: ${eventData}`);
+      throw new Error(
+        `[wasminspect-agent.js] Unexpected event type: ${eventData}`
+      );
     }
     response = {
       type: "SocketResponse",

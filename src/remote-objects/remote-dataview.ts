@@ -21,7 +21,6 @@ export function LittleEndianFromNumber(
   return bytes;
 }
 
-
 export function wrapDataView(constructor: DataViewConstructor) {
   const constructWrapper = (remoteBuffer: RemoteMemoryBuffer) => {
     const fixedNumberGetter = (
@@ -154,4 +153,3 @@ export function wrapDataView(constructor: DataViewConstructor) {
   };
   return new Proxy(constructor, constructorHandler);
 }
-

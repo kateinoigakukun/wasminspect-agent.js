@@ -23,7 +23,7 @@ export function wrapTextDecoder(constructor: any) {
         };
       }
       return Reflect.get(target, prop, receiver);
-    }
+    },
   };
   const constructorHandler: ProxyHandler<any> = {
     construct(target, args) {

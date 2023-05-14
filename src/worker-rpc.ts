@@ -31,13 +31,15 @@ export type SocketRequest =
       body: Uint8Array;
     };
 
-export type SocketResponse = {
-  type: "TextResponse";
-  body: string;
-} | {
-  type: "BinaryResponse",
-  body: Uint8Array,
-};
+export type SocketResponse =
+  | {
+      type: "TextResponse";
+      body: string;
+    }
+  | {
+      type: "BinaryResponse";
+      body: Uint8Array;
+    };
 
 export type WorkerResponse =
   | {

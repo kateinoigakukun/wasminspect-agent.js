@@ -1,4 +1,9 @@
-import { BinaryResponse, BinaryResponseKind, TextRequest, TextResponse } from "./socket-rpc";
+import {
+  BinaryResponse,
+  BinaryResponseKind,
+  TextRequest,
+  TextResponse,
+} from "./socket-rpc";
 import { WorkerClient } from "./worker-client";
 import { SocketResponse, WorkerRequest } from "./worker-rpc";
 
@@ -24,7 +29,9 @@ function _castTextResponse<T extends _TextResponseKind>(
     }
   } else {
     throw new Error(
-      `[wasminspect-agent.js] Unexpected response: ${JSON.stringify(response)}. expected: TextResponse`
+      `[wasminspect-agent.js] Unexpected response: ${JSON.stringify(
+        response
+      )}. expected: TextResponse`
     );
   }
 }
@@ -44,7 +51,9 @@ function _castBinaryResponse(
     }
   } else {
     throw new Error(
-      `[wasminspect-agent.js] Unexpected response: ${JSON.stringify(response)}. expected: BinaryResponse`
+      `[wasminspect-agent.js] Unexpected response: ${JSON.stringify(
+        response
+      )}. expected: BinaryResponse`
     );
   }
 }
