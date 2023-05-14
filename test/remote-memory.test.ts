@@ -162,6 +162,35 @@ describe("TypedArray", () => {
     expect(client.memory[byteLength / 2]).toBe(0x00);
   });
 
+  test.each(constructors)("%p.set", (constructor) => {
+    const byteLength = 24;
+    const WrappedArray = wrapTypedArray(constructor);
+    const client = new MockRpcClient();
+    const buffer = new RemoteMemoryBuffer("dummy", 0, byteLength, client);
+    const target = new WrappedArray(buffer);
+    const originalBuffer = new Uint8Array(byteLength);
+    const original = new constructor(originalBuffer.buffer);
+    client.memory = Uint8Array.from(Array(byteLength).fill(0));
+
+    const expectSameBytes = () => {
+      for (let i = 0; i < byteLength; i++) {
+        expect(client.memory[i]).toBe(originalBuffer[i]);
+      }
+    };
+
+    target.set([1]);
+    original.set([1]);
+    expectSameBytes();
+
+    target.set([1, 2, 3], 2);
+    original.set([1, 2, 3], 2);
+    expectSameBytes();
+
+    target.set([-1], 1);
+    original.set([-1], 1);
+    expectSameBytes();
+  });
+
   test.each(constructors)("%p.slice", (constructor) => {
     const byteLength = 16;
     const WrappedArray = wrapTypedArray(constructor);

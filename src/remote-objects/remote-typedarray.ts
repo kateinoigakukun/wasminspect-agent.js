@@ -67,6 +67,20 @@ export function wrapTypedArray<
             return new constructor(remoteBuffer);
           };
         }
+        case "set": {
+          return (arrayLike: ArrayLike<number>, offset?: number) => {
+            const byteOffset =
+              _optionMap(offset, (v) => v * constructor.BYTES_PER_ELEMENT) ?? 0;
+            const byteLength = arrayLike.length * constructor.BYTES_PER_ELEMENT;
+            const bytes = new Uint8Array(byteLength);
+            const tmpView = new constructor(bytes.buffer);
+            tmpView.set(arrayLike);
+            target.remoteBuffer.setWithCanonicalIndex(
+              byteOffset,
+              Array.from(bytes)
+            );
+          };
+        }
       }
       return Reflect.get(target, prop, receiver);
     },
