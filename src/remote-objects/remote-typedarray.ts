@@ -106,7 +106,17 @@ export function wrapTypedArray<
   const constructorHandler: ProxyHandler<Constructor> = {
     construct(target, args) {
       if (args[0] instanceof RemoteMemoryBuffer) {
-        return constructProxy(args[0]);
+        const remoteBuffer = args[0];
+        if (args.length > 1) {
+          const start = args[1] * constructor.BYTES_PER_ELEMENT;
+          const end =
+            args.length > 2
+              ? start + args[2] * constructor.BYTES_PER_ELEMENT
+              : undefined;
+          const subarray = remoteBuffer.subarray(start, end);
+          return constructProxy(subarray);
+        }
+        return constructProxy(remoteBuffer);
       }
       const newThis = Reflect.construct(target, args);
       return newThis;
